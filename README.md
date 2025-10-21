@@ -1,5 +1,7 @@
 # The ARCO-OCEAN Dataset
 
+[//]: # (TODO: Put a cover figure)
+
 ## Summary
 
 The availability of standard datasets and benchmarks has been a key factor in the development of new machine learning methods and models, including those applied to weather forecasting and climate science ([Rasp et al., 2023](https://arxiv.org/abs/2308.15560), [Watson-Parris et al., 2022](https://doi.org/10.1029/2021MS002954)). The ARCO-OCEAN dataset is a new dataset that aims to provide a representative, and to some extent comprehensive, dataset for training machine learning models to forecast the ocean state.
@@ -229,7 +231,7 @@ Along with the main dataset, statistics computed with respect to the time dimens
 
 ## Tutorials
 
-1. TBD
+1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.ipynb)
 
 ## License
 
