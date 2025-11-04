@@ -1,0 +1,6 @@
+[project]
+name = "arco-ocean"
+version = "0.1.0"
+description = "Documentation and tutorials for the ARCO-OCEAN dataset"
+requires-python = ">=3.11"
+dependencies = ["xarray", "numpy", "cftime", "zarr", "obstore", "dask", "distributed", "jupyter", "pip", "matplotlib", "cartopy", "nc-time-axis"]

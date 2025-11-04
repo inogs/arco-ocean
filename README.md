@@ -24,7 +24,7 @@ Indeed, the dataset has been designed to train a machine learning forecasting mo
 
 The ocean circulation and sea ice variables are taken from the GLORYS12 reanalysis[^1], hence the dataset contains modified E.U. Copernicus Marine Service Information; [DOI: 10.48670/moi-00021](https://doi.org/10.48670/moi-00021).
 
-GLORYS12 has an eddy-resolving resolution of 0.083°, which enables a higher fidelity representation of the dynamics of the ocean than that obtained from running simulations directly at 0.25°. Henceforth, by regridding a higher resolution product, the ARCO-OCEAN dataset retains accuracy although its lower resolution, as argued in [El Aouni et al., 2024](https://arxiv.org/abs/2412.05454).
+GLORYS12 has an eddy-resolving resolution of 0.083°, which enables a high-fidelity representation of the dynamics of the ocean. Henceforth, by regridding a higher resolution product, the ARCO-OCEAN dataset retains accuracy although its lower resolution, as argued in [El Aouni et al., 2024](https://arxiv.org/abs/2412.05454). Notice that GLORYS12 has a domain including longitudes between -80° and 90°. During postprocessing steps this domain has been extended to lower latitudes by filling them with missing values (NaNs). From the viewpoint of the computation of the mask (see the related section below), it is as if the points at these latitudes were covered with land.
 
 GLORYS12 is the only source dataset with a corresponding vertical dimension in ARCO-OCEAN. The number of vertical levels has been reduced from 50 to 10 by subsampling GLORYS12 at the following levels: 0, 4, 8, 12, 16, 20, 24, 28, 32, and 34. Hence, ARCO-OCEAN contains the surface level (at about 50 cm depth, not accounting for skin effects), which is the most important due to coupling with the atmosphere, and 9 levels below, at (about) geometrically increasing depths within the first kilometre.
 
@@ -217,10 +217,10 @@ If you're using `zarr==3`, then you'll need to install also `obstore`, and then 
 ```python
 import xarray as xr
 from zarr.storage import ObjectStore
-from obstore import S3Store
+from obstore.store import S3Store
 
 # see https://zarr.readthedocs.io/en/stable/user-guide/storage.html#object-store for more information
-s3_store = S3Store("ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10", skip_signature=True, region="us-west-2")
+s3_store = S3Store('ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10', skip_signature=True, region='eu-south-1')
 store = ObjectStore(store=s3_store, read_only=True)
 dataset = xr.open_dataset(store, engine='zarr')
 ```
