@@ -1,5 +1,7 @@
 # The ARCO-OCEAN Dataset
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17751608.svg)](https://doi.org/10.5281/zenodo.17751608)
+
 [//]: # (TODO: Put a cover figure)
 
 ## Summary

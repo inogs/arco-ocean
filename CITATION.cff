@@ -1,0 +1,60 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: ARCO-OCEAN
+message: >-
+  If you use this dataset, please cite it using the metadata
+  from this file.
+type: dataset
+authors:
+  - given-names: Stefano
+    family-names: Campanella
+    email: scampanella@ogs.it
+    affiliation: >-
+      National Institute of Oceanography and Applied
+      Geophysics - OGS
+    orcid: 'https://orcid.org/0009-0002-9705-7187'
+  - given-names: Jason
+    family-names: Stock
+    email: jason.stock@anl.gov
+    affiliation: Argonne National Laboratory
+  - given-names: Stefano
+    family-names: Salon
+    email: ssalon@ogs.it
+    affiliation: >-
+      National Institute of Oceanography and Applied
+      Geophysics - OGS
+    orcid: 'https://orcid.org/0000-0003-1233-8271'
+  - given-names: Stefano
+    family-names: Querin
+    orcid: 'https://orcid.org/0000-0002-4658-860X'
+    affiliation: >-
+      National Institute of Oceanography and Applied
+      Geophysics - OGS
+    email: squerin@ogs.it
+  - given-names: Luca
+    family-names: Bortolussi
+    email: lbortolussi@units.it
+    affiliation: University of Trieste
+    orcid: 'https://orcid.org/0000-0001-8874-4001'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.17751608
+repository-code: 'https://github.com/inogs/arco-ocean'
+repository-artifact: 'https://registry.opendata.aws/ogs-arco-ocean/'
+abstract: >-
+  ARCO-OCEAN is an analysis-ready cloud-optimized dataset
+  providing physical properties of the ocean, waves, and sea
+  ice for a period of about 28 years between the 1st of
+  January 1993 and the 30th of June 2021. The dataset
+  includes also atmospheric and hydrological variables that
+  would be needed as boundary conditions and used to drive a
+  numerical simulation. The dataset is the result of
+  collecting, processing, merging and optimizing for the
+  cloud different data sources, all retrospective analyses
+  (reanalyses) or hindcasts of different Earth system
+  components. The dataset has been designed with machine
+  learning in mind, and takes inspiration from similar
+  datasets derived from ERA5.
+license: CC-BY-4.0
