@@ -1,7 +1,7 @@
 start = 1993-01-01T00:00:00
 end = 2021-07-01T00:00:00
 freq = '1D'
-array_step = '90D'
+array_step = '180D'
 checks = ['global_ecmwf_coords', 'dates', 'values']
 
 [[datasets]]
@@ -105,7 +105,7 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 name = 'glofas'
 provider = 'cds'
 type = 'timeseries'
-tmp_step = '128 W'
+tmp_step = '128D'
 
 [[datasets.parts]]
 dataset = 'cems-glofas-historical'
