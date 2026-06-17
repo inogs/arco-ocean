@@ -1,7 +1,7 @@
 start = 1993-01-01T00:00:00
 end = 2021-07-01T00:00:00
 freq = '1D'
-array_step = '180D'
+array_step = '128D'
 checks = ['global_ecmwf_coords', 'dates', 'values']
 
 [[datasets]]
@@ -17,12 +17,15 @@ variables = [
     '10m_v_component_of_wind',
     '2m_dewpoint_temperature',
     '2m_temperature',
+    'geopotential_at_surface',
     'instantaneous_10m_wind_gust',
+    'land_sea_mask',
     'surface_pressure',
     'surface_solar_radiation_downwards',
     'surface_thermal_radiation_downwards',
     'total_precipitation']
-storage_options = {token = 'anon'}
+consolidated = true
+chunks = {time = 48}
 
 [[datasets.postprocess]]
 name = 'isel'
@@ -35,7 +38,7 @@ dim = 'latitude'
 
 [[datasets.postprocess]]
 name = 'resample'
-time = '1 D'
+time = '1D'
 label = 'left'
 closed = 'left'
 reduce = 'mean'
@@ -61,39 +64,13 @@ name = 'rename'
 10m_v_component_of_wind = '10v'
 2m_dewpoint_temperature = '2d'
 2m_temperature = '2t'
+geopotential_at_surface = 'z'
 instantaneous_10m_wind_gust = 'i10fg'
+land_sea_mask = 'lsm'
 surface_pressure = 'sp'
 surface_solar_radiation_downwards = 'ssrd'
 surface_thermal_radiation_downwards = 'strd'
 total_precipitation = 'tp'
-
-[[datasets.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
-
-# ==== ERA5 STATIC ====
-
-[[datasets]]
-name = 'era5_static'
-provider = 'gcs'
-type = 'static'
-
-[[datasets.parts]]
-url = 'gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr'
-storage_options = {token = 'anon'}
-variables = ['land_sea_mask', 'geopotential_at_surface']
-
-[[datasets.postprocess]]
-name = 'drop_vars'
-names = ['time', 'level']
-
-[[datasets.postprocess]]
-name = 'flip'
-dim = 'latitude'
-
-[[datasets.postprocess]]
-name = 'rename'
-name_dict = {land_sea_mask = 'lsm', geopotential_at_surface = 'z'}
 
 [[datasets.postprocess]]
 name = 'rename_coordinates'
@@ -105,7 +82,7 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 name = 'glofas'
 provider = 'cds'
 type = 'timeseries'
-tmp_step = '128D'
+tmp_step = '64D'
 
 [[datasets.parts]]
 dataset = 'cems-glofas-historical'
