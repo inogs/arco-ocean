@@ -129,6 +129,7 @@ OUTPUT_PATH="${OUTPUT_DIR}/${1}"
 
 # Run arco-make
 export PYTHONWARNINGS='ignore::RuntimeWarning'
+export GOOGLE_CLOUD_PROJECT='arco-era5-reader'
 apptainer exec oras://ghcr.io/stefanocampanella/arco-make:latest arco-make download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
 
 DOWNLOAD_EXIT_CODE=$?
