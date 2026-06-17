@@ -83,15 +83,14 @@ done
 PROJECTROOT=$(git rev-parse --show-toplevel)
 cd "${PROJECTROOT}" || exit 1
 
-# Check that apptainer is installed
-apptainer --version || exit 1
+# Set default path envs and module loading 
+source scripts/.env
 
 # Load default modules
-source leonardo/modules.sh
 load_modules
 
-# Set default path envs
-source leonardo/.env
+# Check that apptainer is installed
+apptainer --version || exit 1
 
 # Build command line flags
 FLAGS="--no-progress"
@@ -130,7 +129,7 @@ OUTPUT_PATH="${OUTPUT_DIR}/${1}"
 
 # Run arco-make
 export PYTHONWARNINGS='ignore::RuntimeWarning'
-apptainer exec oras://ghcr.io/arco-make:latest arco-make download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
+apptainer exec oras://ghcr.io/stefanocampanella/arco-make:latest arco-make download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
 
 DOWNLOAD_EXIT_CODE=$?
 
