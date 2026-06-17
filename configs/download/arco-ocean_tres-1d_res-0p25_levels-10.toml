@@ -48,6 +48,7 @@ total_precipitation = 24.0
 surface_solar_radiation_downwards = 24.0
 surface_thermal_radiation_downwards = 24.0
 
+# See: https://forum.ecmwf.int/t/negative-values-in-era5-precipitation-data/1636
 [[datasets.postprocess]]
 name = 'clip_negative'
 variables = ['total_precipitation']
