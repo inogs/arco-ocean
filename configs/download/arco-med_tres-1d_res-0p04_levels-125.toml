@@ -1,0 +1,488 @@
+start = 1999-01-01T00:00:00
+end = 2021-06-01T00:00:00
+array_step = '10 W'
+freq = '1D'
+check_dates = true
+check_values = true
+
+# ==== ERA5 SECTION ====
+
+[[datasets]]
+name = 'era5'
+provider = 'gcs'
+type = 'timeseries'
+tmp_step = '2 W'
+
+[[datasets.parts]]
+url = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
+variables = [
+    '10m_u_component_of_wind',
+    '10m_v_component_of_wind',
+    '2m_dewpoint_temperature',
+    '2m_temperature',
+    'evaporation',
+    'instantaneous_10m_wind_gust',
+    'surface_pressure',
+    'surface_solar_radiation_downwards',
+    'surface_thermal_radiation_downwards',
+    'total_precipitation']
+storage_options = {token = 'anon'}
+
+[[datasets.postprocess]]
+name = 'isel'
+level = 0
+drop = true
+
+[[datasets.postprocess]]
+name = 'flip'
+dim = 'latitude'
+
+[[datasets.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.postprocess]]
+name = 'resample'
+time = '1 D'
+label = 'left'
+closed = 'left'
+reduce = 'mean'
+
+[[datasets.postprocess]]
+name = 'rescale'
+
+[datasets.postprocess.values]
+total_precipitation = 24.0
+surface_solar_radiation_downwards = 24.0
+surface_thermal_radiation_downwards = 24.0
+
+[[datasets.postprocess]]
+name = 'clip_negative'
+variables = ['total_precipitation']
+
+[[datasets.postprocess]]
+name = 'rename'
+
+[datasets.postprocess.name_dict]
+10m_u_component_of_wind = '10u'
+10m_v_component_of_wind = '10v'
+2m_dewpoint_temperature = '2d'
+2m_temperature = '2t'
+evaporation = 'e'
+instantaneous_10m_wind_gust = 'i10fg'
+surface_pressure = 'sp'
+surface_solar_radiation_downwards = 'ssrd'
+surface_thermal_radiation_downwards = 'strd'
+total_precipitation = 'tp'
+
+[[datasets.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+# ==== ERA5 STATIC SECTION ====
+
+[[datasets]]
+name = 'era5_static'
+provider = 'gcs'
+type = 'static'
+tmp_step = '2 W'
+
+[[datasets.parts]]
+url = 'gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr'
+storage_options = {token = 'anon'}
+variables = ['land_sea_mask', 'geopotential_at_surface']
+
+[[datasets.postprocess]]
+name = 'drop_vars'
+names = ['time', 'level']
+
+[[datasets.postprocess]]
+name = 'flip'
+dim = 'latitude'
+
+[[datasets.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.postprocess]]
+name = 'rename'
+name_dict = {land_sea_mask = 'lsm', geopotential_at_surface = 'z'}
+
+[[datasets.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+# ==== GLOFAS SECTION ====
+
+[[datasets]]
+name = 'glofas'
+provider = 'cds'
+type = 'timeseries'
+tmp_step = '2 W'
+
+[[datasets.parts]]
+dataset = 'cems-glofas-historical'
+system_version = ['version_4_0']
+hydrological_model = ['lisflood']
+product_type = ['consolidated']
+variable = ['river_discharge_in_the_last_24_hours']
+data_format = 'grib2'
+download_format = 'zip'
+
+[[datasets.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true, nan_threshold = 0.0}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.postprocess]]
+name = 'astype'
+casting = 'same_kind'
+dtype = 'float32'
+
+[[datasets.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+[datasets.mask]
+provider = 'url'
+type = 'static'
+variable = 'glofas_mask'
+
+[[datasets.mask.parts]]
+url = 'https://confluence.ecmwf.int/download/attachments/242067380/uparea_glofas_v4_0.nc'
+
+[[datasets.mask.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true, nan_threshold = 0.0}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.mask.postprocess]]
+name = 'astype'
+elevation = {dtype = 'float32', casting='same_kind'}
+uparea = {dtype = 'float32', casting='same_kind'}
+
+[[datasets.mask.postprocess]]
+name = 'get_land_mask'
+variable = 'uparea'
+mask_name = 'glofas_mask'
+
+[[datasets.mask.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+# ==== MEDSEA PHYS SECTION ====
+
+[[datasets]]
+name = 'medsea_phys'
+provider = 'cm'
+type = 'timeseries'
+tmp_step = '2 W'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_phy-cur_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['uo', 'vo']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_phy-sal_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['so']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_phy-temp_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['thetao', 'bottomT']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_phy-ssh_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['zos']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_phy-mld_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['mlotst']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.postprocess]]
+name = 'isel_slice'
+depth = {start = 0, end = 125}
+
+[[datasets.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.postprocess]]
+name = 'astype'
+casting = 'same_kind'
+dtype = 'float32'
+
+[[datasets.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
+set_new_coordinate = {'level' = 'auto'}
+
+[datasets.mask]
+provider = 'cm'
+type = 'static'
+variable = 'medsea_phys_mask'
+
+[[datasets.mask.parts]]
+dataset_id = 'cmems_mod_med_phy_my_4.2km_static'
+ dataset_version = '202211'
+variables = ['deptho', 'depth']
+dataset_part = 'bathy'
+service = 'static-arco'
+
+[[datasets.mask.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.mask.postprocess]]
+name = 'astype'
+dtype = 'float32'
+casting = 'same_kind'
+
+[[datasets.mask.postprocess]]
+name = 'rename'
+name_dict = {deptho = 'medsea_phys_deptho'}
+
+[[datasets.mask.postprocess]]
+name = 'get_sea_mask'
+bathymetry = 'medsea_phys_deptho'
+depth_coordinate = 'depth'
+depth_dim = 'depth'
+mask_name = 'medsea_phys_mask'
+
+[[datasets.mask.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
+set_new_coordinate = {'level' = 'auto'}
+
+# ==== MEDSEA WAVE SECTION ====
+
+[[datasets]]
+name = 'medsea_wave'
+provider = 'cm'
+type = 'timeseries'
+tmp_step = '2 W'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_wav_my_4.2km_PT1H-i'
+dataset_version = '202511'
+variables = ['VHM0', 'VTM02', 'VMDR', 'VSDX', 'VSDY']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.postprocess]]
+name = 'resample'
+time = '1 D'
+label = 'left'
+closed = 'left'
+reduce = 'mean'
+
+[[datasets.postprocess]]
+name = 'astype'
+casting = 'same_kind'
+dtype = 'float32'
+
+[[datasets.postprocess]]
+name = 'rename'
+name_dict = {VHM0 = 'swh', VTM02 = 'swp', VSDX = 'usd', VSDY = 'vsd', VMDR = 'mwd'}
+
+[[datasets.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+[[datasets.postprocess]]
+name = 'fill'
+variables = ['swh', 'swp', 'mwd', 'usd', 'vsd']
+
+[datasets.mask]
+provider = 'cm'
+type = 'static'
+variable = 'medsea_wave_mask'
+
+[[datasets.mask.parts]]
+dataset_id = 'cmems_mod_med_wav_my_4.2km_static'
+dataset_version = '202211'
+variables = ['deptho']
+dataset_part = 'bathy'
+service = 'static-arco'
+
+[[datasets.mask.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.mask.postprocess]]
+name = 'astype'
+dtype = 'float32'
+casting = 'same_kind'
+
+[[datasets.mask.postprocess]]
+name = 'get_land_mask'
+variable = 'deptho'
+mask_name = 'medsea_wave_mask'
+
+[[datasets.mask.postprocess]]
+name = 'rename'
+name_dict = {deptho = 'medsea_wave_deptho'}
+
+[[datasets.mask.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+# ==== MEDSEA BIO SECTION ====
+
+[[datasets]]
+name = 'medsea_bio'
+provider = 'cm'
+type = 'timeseries'
+tmp_step = '2 W'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_bgc-car_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['ph', 'dissic', 'talk']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_bgc-co2_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['spco2', 'fpco2']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_bgc-nut_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['no3', 'po4', 'nh4']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_bgc-plankton_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['phyc', 'chl']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.parts]]
+dataset_id = 'cmems_mod_med_bgc-bio_my_4.2km_P1D-m'
+dataset_version = '202511'
+variables = ['nppv', 'o2']
+dataset_part = 'default'
+service = 'arco-geo-series'
+
+[[datasets.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.postprocess]]
+name = 'astype'
+casting = 'same_kind'
+dtype = 'float32'
+
+[[datasets.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
+set_new_coordinate = {'level' = 'auto'}
+
+[datasets.mask]
+provider = 'cm'
+type = 'static'
+variable = 'medsea_bio_mask'
+
+[[datasets.mask.parts]]
+dataset_id = 'cmems_mod_med_bgc_my_4.2km_static'
+dataset_version = '202211'
+variables = ['deptho', 'depth']
+dataset_part = 'bathy'
+service = 'static-arco'
+
+[[datasets.mask.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true}
+grid = {south = 30.00, north = 46.00, west = -5.60, east = 36.40, resolution_lat = 0.04, resolution_lon = 0.04}
+
+[[datasets.mask.postprocess]]
+name = 'astype'
+dtype = 'float32'
+casting = 'same_kind'
+
+[[datasets.mask.postprocess]]
+name = 'get_sea_mask'
+bathymetry = 'deptho'
+depth_coordinate = 'depth'
+depth_dim = 'depth'
+mask_name = 'medsea_bio_mask'
+
+[[datasets.mask.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
+set_new_coordinate = {'level' = 'auto'}
+
+[[datasets.mask.postprocess]]
+name = 'rename'
+name_dict = {deptho = 'medsea_bio_deptho'}
+
+[save]
+consolidated = true
+chunk = {time = 1, level = -1, lat = -1, lon = -1}
+compressor = {cname = 'lz4', clevel = 1}
+
+[[save.postprocess]]
+name = 'transpose'
+dims = ['time', 'level', 'lat', 'lon']
+
