@@ -25,7 +25,7 @@ variables = [
     'surface_thermal_radiation_downwards',
     'total_precipitation']
 consolidated = true
-chunks = {time = 48}
+chunks = {time = 48, latitude = -1, longitude = -1}
 
 [[datasets.postprocess]]
 name = 'isel'
@@ -82,7 +82,7 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 name = 'glofas'
 provider = 'cds'
 type = 'timeseries'
-tmp_step = '64D'
+tmp_step = '16D'
 
 [[datasets.parts]]
 dataset = 'cems-glofas-historical'
@@ -92,6 +92,12 @@ product_type = ['consolidated']
 variable = ['river_discharge_in_the_last_24_hours']
 data_format = 'grib2'
 download_format = 'zip'
+
+[[datasets.postprocess]]
+name = 'chunk'
+time = 'auto'
+latitude = -1
+longitude = -1
 
 [[datasets.postprocess]]
 name = 'regrid'
@@ -111,6 +117,7 @@ name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
 [datasets.mask]
+name = 'glofas mask'
 provider = 'url'
 type = 'static'
 variable = 'glofas_mask'
@@ -156,6 +163,13 @@ dataset_part = 'default'
 service = 'arco-geo-series'
 
 [[datasets.postprocess]]
+name = 'chunk'
+time = 'auto'
+latitude = -1
+longitude = -1
+depth = -1
+
+[[datasets.postprocess]]
 name = 'isel'
 depth = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]
 
@@ -190,6 +204,7 @@ mode = 'mirror'
 output = 'float32'
 
 [datasets.mask]
+name = 'glorys mask'
 provider = 'cm'
 type = 'static'
 variable = 'glorys_mask'
@@ -250,6 +265,12 @@ dataset_part = 'default'
 service = 'arco-geo-series'
 
 [[datasets.postprocess]]
+name = 'chunk'
+time = 'auto'
+latitude = -1
+longitude = -1
+
+[[datasets.postprocess]]
 name = 'regrid'
 method = 'conservative'
 latitude_dim = 'latitude'
@@ -282,6 +303,7 @@ name = 'fill'
 variables = ['swh', 'swp', 'mwd', 'usd', 'vsd']
 
 [datasets.mask]
+name = 'waverys mask'
 provider = 'cm'
 type = 'static'
 variable = 'waverys_mask'
