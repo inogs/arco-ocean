@@ -1,14 +1,14 @@
 start = 1993-01-01T00:00:00
 end = 2021-07-01T00:00:00
 freq = '1D'
-array_step = '10 W'
+array_step = '90D'
 checks = ['global_ecmwf_coords', 'dates', 'values']
 
 [[datasets]]
 name = 'era5'
 provider = 'gcs'
 type = 'timeseries'
-tmp_step = '2 W'
+tmp_step = '16D'
 
 [[datasets.parts]]
 url = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
@@ -77,7 +77,6 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 name = 'era5_static'
 provider = 'gcs'
 type = 'static'
-tmp_step = '2 W'
 
 [[datasets.parts]]
 url = 'gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr'
@@ -106,7 +105,7 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 name = 'glofas'
 provider = 'cds'
 type = 'timeseries'
-tmp_step = '2 W'
+tmp_step = '128 W'
 
 [[datasets.parts]]
 dataset = 'cems-glofas-historical'
@@ -170,7 +169,7 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 name = 'glorys'
 provider = 'cm'
 type = 'timeseries'
-tmp_step = '2 W'
+tmp_step = '8D'
 
 [[datasets.parts]]
 dataset_id = 'cmems_mod_glo_phy_my_0.083deg_P1D-m'
@@ -264,7 +263,7 @@ set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 name = 'waverys'
 provider = 'cm'
 type = 'timeseries'
-tmp_step = '2 W'
+tmp_step = '64D'
 
 [[datasets.parts]]
 dataset_id = 'cmems_mod_glo_wav_my_0.2deg_PT3H-i'
