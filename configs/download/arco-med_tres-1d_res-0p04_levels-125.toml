@@ -20,7 +20,6 @@ variables = [
     '10m_v_component_of_wind',
     '2m_dewpoint_temperature',
     '2m_temperature',
-    'evaporation',
     'instantaneous_10m_wind_gust',
     'surface_pressure',
     'surface_solar_radiation_downwards',
@@ -72,7 +71,6 @@ name = 'rename'
 10m_v_component_of_wind = '10v'
 2m_dewpoint_temperature = '2d'
 2m_temperature = '2t'
-evaporation = 'e'
 instantaneous_10m_wind_gust = 'i10fg'
 surface_pressure = 'sp'
 surface_solar_radiation_downwards = 'ssrd'
