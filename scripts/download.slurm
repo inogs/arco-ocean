@@ -110,7 +110,7 @@ FLAGS="${FLAGS} --log-level=info"
 if [[ ${ARRAY} == true ]]; then
     START_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * SLURM_ARRAY_TASK_ID ))  days" +"%Y-%m-%d")
     END_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * (SLURM_ARRAY_TASK_ID + 1) )) days" +"%Y-%m-%d")
-    if [[ "$ARCO_OCEAN_ARRAY_END" -le "$END_DATE" ]]; then
+    if [[ "$ARCO_OCEAN_ARRAY_END" < "$END_DATE" ]]; then
        END_DATE=$ARCO_OCEAN_ARRAY_END
     fi
 fi
@@ -128,12 +128,15 @@ CONFIG_PATH="${PROJECTROOT}/configs/download/${1}.toml"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data"
+    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data/${1}"
 fi
+
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"
 fi
-OUTPUT_PATH="${OUTPUT_DIR}/${1}"
+
+OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.zip"
+
 
 # Run arco-make
 export PYTHONWARNINGS='ignore::RuntimeWarning'
