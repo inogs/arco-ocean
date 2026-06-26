@@ -31,6 +31,10 @@ DESCRIPTION
 EOF
 }
 
+ARCO_OCEAN_ARRAY_START=1993-01-01
+ARCO_OCEAN_ARRAY_END=2021-07-01
+ARCO_OCEAN_ARRAY_STEP=256
+
 # Options default values
 ARRAY=true
 OVERWRITE=false
@@ -104,7 +108,11 @@ fi
 FLAGS="${FLAGS} --log-level=info"
 
 if [[ ${ARRAY} == true ]]; then
-    FLAGS="${FLAGS} --array-id=${SLURM_ARRAY_TASK_ID}"
+    START_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * SLURM_ARRAY_TASK_ID ))  days" +"%Y-%m-%d")
+    END_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * (SLURM_ARRAY_TASK_ID + 1) )) days" +"%Y-%m-%d")
+    if [[ "$ARCO_OCEAN_ARRAY_END" -le "$END_DATE" ]]; then
+       END_DATE=$ARCO_OCEAN_ARRAY_END
+    fi
 fi
 
 if [[ -n ${START_DATE} ]]; then
