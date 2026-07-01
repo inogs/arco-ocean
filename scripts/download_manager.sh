@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 # scripts/download_manager.sh
-# 
-# Description of the algorithm:
-# 1. Batched Submission: Manages SLURM job arrays in small batches (MAX_ARRAY_SIZE) to stay within 
+#
+# The script work around CINECA Leonardo restrictions on lrd_all_serial partition.
+# 1. Batched Submission: Manages SLURM job arrays in small batches (MAX_ARRAY_SIZE) to stay within
 #    cluster limits (e.g., max 10 elements per array, one job at a time).
-# 2. Recursive Management: Uses 'exec' to relaunch itself, resetting the process timer on login 
+# 2. Recursive Management: Uses 'setsid --fork' to relaunch itself, resetting the process timer on login
 #    nodes to bypass CPU time limits (e.g., 10 minutes).
 # 3. State Tracking:
 #    - If no Job ID is provided: Submits a new batch of tasks starting from START_INDEX.
@@ -56,7 +56,7 @@ fi
 
 # Redirect all output to a log file to avoid cluttering standard output
 mkdir -p logs
-MANAGER_LOG="logs/submit_download_manager_${CONFIG}.log"
+MANAGER_LOG="logs/download_manager_${CONFIG}.log"
 exec >> "${MANAGER_LOG}" 2>&1
 
 echo "============================================================"
@@ -94,13 +94,12 @@ if [[ -z "${JOB_ID}" ]]; then
     echo "Job submitted: ${JOB_ID}"
 fi
 
-# Point 4, 5, 6: Wait and check
+# Wait and check
 echo "Waiting 5 minutes before checking status of Job ${JOB_ID}..."
 sleep 300
 
 # We need START_INDEX to know which indices were submitted if we are resuming
-# If START_INDEX was not passed but JOB_ID was, we might have an issue, 
-# but Point 6 says "If the job id and progressive number are not a null strings".
+# If START_INDEX was not passed but JOB_ID was, we might have an issue.
 if [[ -z "${START_INDEX}" ]]; then
     echo "Error: Start index is required to check status of Job ID ${JOB_ID}."
     exit 1
@@ -152,10 +151,10 @@ if [[ "${ALL_FINISHED}" == "true" ]]; then
     fi
     
     echo "Relaunching for next batch with index=${NEXT_INDEX}..."
-    exec bash "$0" "${CONFIG}" "" "${NEXT_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}"
+    setsid --fork bash "$0" "${CONFIG}" "" "${NEXT_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}"
 else
     # Still running
     echo "Job array ${JOB_ID} is still in progress."
     echo "Waiting and relaunching with same Job ID to check again..."
-    exec bash "$0" "${CONFIG}" "${JOB_ID}" "${START_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}"
+    setsid --fork bash "$0" "${CONFIG}" "${JOB_ID}" "${START_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}"
 fi
