@@ -2,7 +2,9 @@
 
 # scripts/download_manager.sh
 #
-# The script work around CINECA Leonardo restrictions on lrd_all_serial partition.
+# The script work around CINECA Leonardo restrictions on lrd_all_serial partition,
+# basically doing what an user would do manually:
+#
 # 1. Batched Submission: Manages SLURM job arrays in small batches (MAX_ARRAY_SIZE) to stay within
 #    cluster limits (e.g., max 10 elements per array, one job at a time).
 # 2. Recursive Management: Uses 'setsid --fork' to relaunch itself, resetting the process timer on login
@@ -10,7 +12,7 @@
 # 3. State Tracking:
 #    - If no Job ID is provided: Submits a new batch of tasks starting from START_INDEX.
 #    - If Job ID is provided: Monitors the existing batch.
-# 4. Task Monitoring: Waits 5 minutes, then evaluates each task index in the current batch:
+# 4. Task Monitoring: Waits a configurable time (default 30 min), then evaluates each task index in the current batch:
 #    - SUCCESS: Log file contains "Download completed successfully."
 #    - RUNNING: Task is still active in 'squeue' for the tracked Job ID.
 #    - FAILED: Neither successful nor running.
@@ -27,6 +29,7 @@ JOB_ID=$2
 START_INDEX=$3
 MAX_INDEX=${4:-41}
 MAX_ARRAY_SIZE=${5:-10}
+WAIT_TIME=${6:-1800}
 
 # Change current directory to project root
 PROJECTROOT=$(git rev-parse --show-toplevel)
@@ -34,8 +37,8 @@ cd "${PROJECTROOT}" || exit 1
 
 # Check arguments
 if [[ -z "${CONFIG}" ]]; then
-    echo "Usage: $0 CONFIG_NAME [JOB_ID] [START_INDEX] [MAX_INDEX] [MAX_ARRAY_SIZE]"
-    echo "Example: $0 arco-ocean_tres-1d_res-0p25_levels-10 \"\" 0 41 10"
+    echo "Usage: $0 CONFIG_NAME [JOB_ID] [START_INDEX] [MAX_INDEX] [MAX_ARRAY_SIZE] [WAIT_TIME]"
+    echo "Example: $0 arco-ocean_tres-1d_res-0p25_levels-10 \"\" 0 41 10 1800"
     exit 1
 fi
 
@@ -61,7 +64,7 @@ exec >> "${MANAGER_LOG}" 2>&1
 
 echo "============================================================"
 echo "Manager run started at: $(date)"
-echo "Config: ${CONFIG}, JobID: ${JOB_ID:-None}, StartIndex: ${START_INDEX}"
+echo "Config: ${CONFIG}, JobID: ${JOB_ID:-None}, StartIndex: ${START_INDEX}, PID: $$, Hostname: $(hostname)"
 echo "============================================================"
 
 if [[ -n "${MAX_INDEX}" && -n "${START_INDEX}" && "${START_INDEX}" -gt "${MAX_INDEX}" ]]; then
@@ -95,8 +98,8 @@ if [[ -z "${JOB_ID}" ]]; then
 fi
 
 # Wait and check
-echo "Waiting 5 minutes before checking status of Job ${JOB_ID}..."
-sleep 300
+echo "Waiting $((WAIT_TIME / 60)) minutes before checking status of Job ${JOB_ID}..."
+sleep "${WAIT_TIME}"
 
 # We need START_INDEX to know which indices were submitted if we are resuming
 # If START_INDEX was not passed but JOB_ID was, we might have an issue.
@@ -151,10 +154,10 @@ if [[ "${ALL_FINISHED}" == "true" ]]; then
     fi
     
     echo "Relaunching for next batch with index=${NEXT_INDEX}..."
-    setsid --fork bash "$0" "${CONFIG}" "" "${NEXT_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}"
+    setsid --fork bash "$0" "${CONFIG}" "" "${NEXT_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}" "${WAIT_TIME}"
 else
     # Still running
     echo "Job array ${JOB_ID} is still in progress."
     echo "Waiting and relaunching with same Job ID to check again..."
-    setsid --fork bash "$0" "${CONFIG}" "${JOB_ID}" "${START_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}"
+    setsid --fork bash "$0" "${CONFIG}" "${JOB_ID}" "${START_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}" "${WAIT_TIME}"
 fi
