@@ -1,8 +1,9 @@
 start = 1993-01-01T00:00:00
 end = 2021-07-01T00:00:00
 
-[datasets.era5]
-checkpointing_step = '128D'
+[datasets.era5.checkpointing]
+step = '128D'
+compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.era5.parts]]
 filename_or_obj = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
@@ -71,8 +72,9 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 
 # ==== GLOFAS SECTION ====
 
-[datasets.glofas]
-checkpointing_step = '64D'
+[datasets.glofas.checkpointing]
+step = '64D'
+compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glofas.parts]]
 filename_or_obj = 'ewds://cems-glofas-historical'
@@ -128,8 +130,9 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 
 # ==== GLORYS SECTION ====
 
-[datasets.glorys]
-checkpointing_step = '4D'
+[datasets.glorys.checkpointing]
+step = '4D'
+compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glorys.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
@@ -166,8 +169,9 @@ name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
 set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 
-[datasets.glorys_seaice]
-checkpointing_step = '128D'
+[datasets.glorys_seaice.checkpointing]
+step = '128D'
+compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glorys_seaice.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
@@ -248,8 +252,9 @@ set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 
 # ==== WAVERYS SECTION ====
 
-[datasets.waverys]
-checkpointing_step = '32D'
+[datasets.waverys.checkpointing]
+step = '64D'
+compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.waverys.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_PT3H-i'
@@ -258,7 +263,7 @@ variables = ['VHM0', 'VTM02', 'VMDR', 'VSDX', 'VSDY']
 dataset_version = '202411'
 dataset_part = 'default'
 service = 'arco-geo-series'
-chunks = {time = 24, latitude = -1, longitude = -1}
+chunks = {time = 8, latitude = -1, longitude = -1}
 
 [[datasets.waverys.postprocess]]
 name = 'regrid'
@@ -326,6 +331,13 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 # ==== SAVING SECTION ====
 
 [[postprocess]]
+name = 'chunk'
+time = 1
+level = -1
+lat = -1
+lon = -1
+
+[[postprocess]]
 name = 'masked_fill'
 mask_name = 'glorys_mask'
 fill_value = 0.0
@@ -335,7 +347,6 @@ variables = ['usi', 'vsi', 'sithick', 'siconc']
 name = 'gaussian_blur_extrapolate'
 variables = ['so', 'thetao', 'vo', 'uo']
 gaussian_filter_kwargs = {sigma = 6.0, radius = 6, mode = 'nearest', output = 'float32'}
-output_chunks = {time = 1, level = 1, lat = -1, lon = -1}
 
 [[postprocess]]
 name = 'apply_mask'
