@@ -13,7 +13,7 @@ download_dataset.slurm
     This script downloads datasets using arco-make. It requires Apptainer to be installed.
     If the dataset is static (e.g. bathymetry), it will download the entire dataset at once.
     If the dataset is a timeseries, it will download a range of dates computed from SLURM_ARRAY_TASK_ID.
-    The script will look into "configs/download" for a TOML recipe named CONFIG_NAME,
+    The script will look into "configs" for a TOML recipe named CONFIG_NAME,
     and the output path will computed as "OUTPUT_DIR/CONFIG_NAME".
 
 SYNOPSIS
@@ -124,7 +124,7 @@ if [[ -n ${END_DATE} ]]; then
 fi
 
 # Determine config file and output paths using the remaining argument
-CONFIG_PATH="${PROJECTROOT}/configs/download/${1}.toml"
+CONFIG_PATH="${PROJECTROOT}/configs/${1}.toml"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
