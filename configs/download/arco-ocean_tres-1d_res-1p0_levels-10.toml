@@ -32,6 +32,13 @@ name = 'flip'
 dim = 'latitude'
 
 [[datasets.era5.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
+
+[[datasets.era5.postprocess]]
 name = 'resample'
 time = '1 D'
 label = 'left'
@@ -91,7 +98,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glofas.postprocess]]
 name = 'astype'
@@ -113,7 +120,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glofas_mask.postprocess]]
 name = 'astype'
@@ -157,7 +164,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys.postprocess]]
 name = 'astype'
@@ -192,7 +199,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys_seaice.postprocess]]
 name = 'astype'
@@ -223,7 +230,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys_mask.postprocess]]
 name = 'astype'
@@ -271,7 +278,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 24, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.waverys.postprocess]]
 name = 'resample'
@@ -308,7 +315,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.waverys_mask.postprocess]]
 name = 'astype'

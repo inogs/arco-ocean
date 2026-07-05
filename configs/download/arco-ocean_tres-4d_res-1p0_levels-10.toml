@@ -10,7 +10,7 @@ filename_or_obj = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.
 engine = 'zarr'
 consolidated = true
 storage_options = {token = "anon"}
-chunks = {time = 24, latitude = -1, longitude = -1}
+chunks = {time = 96, latitude = -1, longitude = -1}
 
 [[datasets.era5.postprocess]]
 name = 'select_variables'
@@ -32,8 +32,15 @@ name = 'flip'
 dim = 'latitude'
 
 [[datasets.era5.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
+
+[[datasets.era5.postprocess]]
 name = 'resample'
-time = '1 D'
+time = '4 D'
 label = 'left'
 closed = 'left'
 reduce = 'mean'
@@ -83,7 +90,7 @@ system_version = 'version_4_0'
 hydrological_model = 'lisflood'
 product_type = 'consolidated'
 variable = 'river_discharge_in_the_last_24_hours'
-chunks = {time = 1, latitude = -1, longitude = -1}
+chunks = {time = 4, latitude = -1, longitude = -1}
 
 [[datasets.glofas.postprocess]]
 name = 'regrid'
@@ -91,12 +98,19 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glofas.postprocess]]
 name = 'astype'
 casting = 'same_kind'
 dtype = 'float32'
+
+[[datasets.glofas.postprocess]]
+name = 'resample'
+time = '4 D'
+label = 'left'
+closed = 'left'
+reduce = 'mean'
 
 [[datasets.glofas.postprocess]]
 name = 'rename_coordinates'
@@ -113,7 +127,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glofas_mask.postprocess]]
 name = 'astype'
@@ -141,7 +155,7 @@ variables = ['uo', 'vo', 'so', 'thetao', 'mlotst', 'zos']
 dataset_version = '202311'
 dataset_part = 'default'
 service = 'arco-geo-series'
-chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
+chunks = {time = 4, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.postprocess]]
 name = 'sel'
@@ -157,12 +171,19 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys.postprocess]]
 name = 'astype'
 casting = 'same_kind'
 dtype = 'float32'
+
+[[datasets.glorys.postprocess]]
+name = 'resample'
+time = '4 D'
+label = 'left'
+closed = 'left'
+reduce = 'mean'
 
 [[datasets.glorys.postprocess]]
 name = 'rename_coordinates'
@@ -180,7 +201,7 @@ variables = ['sithick', 'siconc', 'usi', 'vsi']
 dataset_version = '202311'
 dataset_part = 'default'
 service = 'arco-geo-series'
-chunks = {time = 1, latitude = -1, longitude = -1}
+chunks = {time = 4, latitude = -1, longitude = -1}
 
 [[datasets.glorys_seaice.postprocess]]
 name = 'sel'
@@ -192,12 +213,19 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys_seaice.postprocess]]
 name = 'astype'
 casting = 'same_kind'
 dtype = 'float32'
+
+[[datasets.glorys_seaice.postprocess]]
+name = 'resample'
+time = '4 D'
+label = 'left'
+closed = 'left'
+reduce = 'mean'
 
 [[datasets.glorys_seaice.postprocess]]
 name = 'rename_coordinates'
@@ -223,7 +251,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys_mask.postprocess]]
 name = 'astype'
@@ -263,19 +291,19 @@ variables = ['VHM0', 'VTM02', 'VMDR', 'VSDX', 'VSDY']
 dataset_version = '202411'
 dataset_part = 'default'
 service = 'arco-geo-series'
-chunks = {time = 8, latitude = -1, longitude = -1}
+chunks = {time = 32, latitude = -1, longitude = -1}
 
 [[datasets.waverys.postprocess]]
 name = 'regrid'
 method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
-kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 24, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 32, latitude = -1, longitude = -1}}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.waverys.postprocess]]
 name = 'resample'
-time = '1 D'
+time = '4 D'
 label = 'left'
 closed = 'left'
 reduce = 'mean'
@@ -308,7 +336,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.waverys_mask.postprocess]]
 name = 'astype'
@@ -373,7 +401,7 @@ latitude_dim = 'lat'
 longitude_dim = 'lon'
 
 [checks.valid_time_coordinate]
-freq = '1D'
+freq = '4D'
 
 [checks.ensure_no_nans]
 glofas_mask = ['uparea', 'dis24']

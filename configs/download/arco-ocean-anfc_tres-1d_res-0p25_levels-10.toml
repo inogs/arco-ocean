@@ -1,5 +1,5 @@
-start = 1993-01-01T00:00:00
-end = 2021-07-01T00:00:00
+start = 2024-01-01T00:00:00
+end = 2025-01-04T00:00:00
 
 [datasets.era5.checkpointing]
 step = '128D'
@@ -128,17 +128,43 @@ mask_name = 'glofas_mask'
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
-# ==== GLORYS SECTION ====
+# ==== GLORYS SECTION (Analysis and Forecast) ====
 
 [datasets.glorys.checkpointing]
 step = '4D'
 compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
+filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m'
 engine = 'copernicusmarine'
-variables = ['uo', 'vo', 'so', 'thetao', 'mlotst', 'zos']
-dataset_version = '202311'
+variables = ['mlotst', 'zos']
+dataset_version = '202406'
+dataset_part = 'default'
+service = 'arco-geo-series'
+chunks = {time = 1, latitude = -1, longitude = -1}
+
+[[datasets.glorys.parts]]
+filename_or_obj = 'cm://cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m'
+engine = 'copernicusmarine'
+variables = ['so']
+dataset_version = '202406'
+dataset_part = 'default'
+service = 'arco-geo-series'
+chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
+
+[[datasets.glorys.parts]]
+filename_or_obj = 'cm://cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m'
+engine = 'copernicusmarine'
+variables = ['thetao']
+dataset_version = '202406'
+dataset_part = 'default'
+service = 'arco-geo-series'
+chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
+
+[[datasets.glorys.parts]]
+filename_or_obj = 'cm://cmems_mod_glo_phy-cur_anfc_0.083deg_P1D-m'
+engine = 'copernicusmarine'
+variables = ['uo', 'vo']
 dataset_part = 'default'
 service = 'arco-geo-series'
 chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
@@ -174,10 +200,10 @@ step = '128D'
 compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glorys_seaice.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
+filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m'
 engine = 'copernicusmarine'
 variables = ['sithick', 'siconc', 'usi', 'vsi']
-dataset_version = '202311'
+dataset_version = '202406'
 dataset_part = 'default'
 service = 'arco-geo-series'
 chunks = {time = 1, latitude = -1, longitude = -1}
@@ -205,10 +231,9 @@ name_dict = {latitude = 'lat', longitude = 'lon'}
 
 
 [[datasets.glorys_mask.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_static'
+filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_static'
 engine = 'copernicusmarine'
 variables = ['deptho', 'depth']
-dataset_version = '202311'
 dataset_part = 'bathy'
 service = 'static-arco'
 chunks = {depth = 1, latitude = -1, longitude = -1}
@@ -257,7 +282,7 @@ step = '64D'
 compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.waverys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_PT3H-i'
+filename_or_obj = 'cm://cmems_mod_glo_wav_anfc_0.083deg_PT3H-i'
 engine = 'copernicusmarine'
 variables = ['VHM0', 'VTM02', 'VMDR', 'VSDX', 'VSDY']
 dataset_version = '202411'
@@ -294,7 +319,7 @@ name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
 [[datasets.waverys_mask.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_static'
+filename_or_obj = 'cm://cmems_mod_wav_anfc_0.083deg_static'
 engine = 'copernicusmarine'
 dataset_version = '202311'
 variables = 'deptho'
