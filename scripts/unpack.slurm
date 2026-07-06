@@ -27,7 +27,6 @@ DESCRIPTION
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/unpack).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --overwrite                             Whether to overwrite destination (default false).
-        --debug                                 Use synchronous Dask scheduler (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
@@ -37,11 +36,10 @@ EOF
 OVERWRITE=false
 TIME_DIM="time"
 LOG_LEVEL="info"
-DEBUG="false"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,overwrite,time-dim:,log-level:,debug,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,overwrite,time-dim:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -83,10 +81,6 @@ while true; do
             ;;
         (--log-level)
             LOG_LEVEL="$2"; shift 2
-            ;;
-        (--debug)
-            DEBUG=true
-            shift
             ;;
         (--help)
             usage;
@@ -131,12 +125,6 @@ if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
 else
     FLAGS="${FLAGS} --no-overwrite"
-fi
-
-if [[ ${DEBUG} == true ]]; then
-    FLAGS="${FLAGS} --debug"
-else
-    FLAGS="${FLAGS} --no-debug"
 fi
 
 if [[ -n ${START_DATE} ]]; then
