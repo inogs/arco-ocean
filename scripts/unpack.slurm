@@ -24,6 +24,7 @@ DESCRIPTION
         --end                                   Overwrite config end date.
         --input-dir                             Where to look for data (defaut to $LEONARDO_DATA_ROOT/data/archive).
         --output-dir                            Where to place the ouputs (default to $LEONARDO_DATA_ROOT/data/dataset).
+        --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --overwrite                             Whether to overwrite destination (default false).
         --debug                                 Use synchronous Dask scheduler (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
@@ -36,9 +37,10 @@ OVERWRITE=false
 TIME_DIM="time"
 LOG_LEVEL="info"
 DEBUG="false"
+IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,overwrite,time-dim:,log-level:,debug,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,image:,overwrite,time-dim:,log-level:,debug,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -61,6 +63,10 @@ while true; do
             ;;
         (--output-dir)
             OUTPUT_DIR="${2}"
+            shift 2
+            ;;
+        (--image)
+            IMAGE="${2}"
             shift 2
             ;;
         (--overwrite)
@@ -172,7 +178,7 @@ export DASK_MPI__LOG_DIR="${PROJECT_ROOT}/logs/dask"
 export PYTHONWARNINGS='ignore::RuntimeWarning'
 
 srun --output="${PROJECT_ROOT}"/logs/%x-%j_%N_%t.out --error="${PROJECT_ROOT}"/logs/%x-%j_%N_%t.err \
-  apptainer exec oras://ghcr.io/stefanocampanella/arco-make:latest arco-make unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
+  apptainer exec "${IMAGE}" arco-make unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
 
 UNPACK_EXIT_CODE=$?
 
