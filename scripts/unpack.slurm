@@ -178,7 +178,7 @@ export DASK_MPI__LOG_DIR="${PROJECT_ROOT}/logs/dask"
 export PYTHONWARNINGS='ignore::RuntimeWarning'
 
 srun --output="${PROJECT_ROOT}"/logs/%x-%j_%N_%t.out --error="${PROJECT_ROOT}"/logs/%x-%j_%N_%t.err \
-  apptainer exec "${IMAGE}" arco-make unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
+  apptainer exec "${IMAGE}" arco-make unpack-zips ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
 
 UNPACK_EXIT_CODE=$?
 
