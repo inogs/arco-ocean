@@ -24,6 +24,7 @@ DESCRIPTION
         --end                                   Overwrite config end date.
         --input-dir                             Where to look for data (defaut to $LEONARDO_DATA_ROOT/data/archive).
         --output-dir                            Where to place the ouputs (default to $LEONARDO_DATA_ROOT/data/dataset).
+        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/unpack).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --overwrite                             Whether to overwrite destination (default false).
         --debug                                 Use synchronous Dask scheduler (default false).
@@ -40,7 +41,7 @@ DEBUG="false"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,image:,overwrite,time-dim:,log-level:,debug,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,overwrite,time-dim:,log-level:,debug,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -63,6 +64,10 @@ while true; do
             ;;
         (--output-dir)
             OUTPUT_DIR="${2}"
+            shift 2
+            ;;
+        (--log-dir)
+            LOG_DIR="${2}"
             shift 2
             ;;
         (--image)
@@ -162,6 +167,15 @@ if [[ "${INPUT_DIR}" == "${OUTPUT_DIR}" ]]; then
     exit 1
 fi
 
+# Set default LOG_DIR and ensure it exists
+if [[ -z ${LOG_DIR} ]]; then
+    LOG_DIR="${PROJECT_ROOT}/logs/unpack"
+fi
+if [[ ! -d "${LOG_DIR}" ]]; then
+    mkdir -p "${LOG_DIR}"
+fi
+
+
 # see:
 # https://bitbucket.org/mpi4py/mpi4py/issues/80/mpi_thread_multiple-vs-mpi_thread_single
 # https://github.com/open-mpi/ompi/issues/6240
@@ -177,7 +191,7 @@ export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
 export DASK_MPI__LOG_DIR="${PROJECT_ROOT}/logs/dask"
 export PYTHONWARNINGS='ignore::RuntimeWarning'
 
-srun --output="${PROJECT_ROOT}"/logs/%x-%j_%N_%t.out --error="${PROJECT_ROOT}"/logs/%x-%j_%N_%t.err \
+srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
   apptainer exec "${IMAGE}" arco-make unpack-zips ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
 
 UNPACK_EXIT_CODE=$?
