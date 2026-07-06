@@ -125,7 +125,7 @@ load_modules
 apptainer --version || exit 1
 
 # Build command line flags
-FLAGS="--time-dim=${TIME_DIM} --log-level=${LOG_LEVEL} --chunks=time:32,level:-1,lat:-1,lon:-1"
+FLAGS="--time-dim=${TIME_DIM} --log-level=${LOG_LEVEL} --scheduler-type=mpi --chunks=time:32,level:-1,lat:-1,lon:-1"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
@@ -192,7 +192,7 @@ export DASK_MPI__LOG_DIR="${PROJECT_ROOT}/logs/dask"
 export PYTHONWARNINGS='ignore::RuntimeWarning'
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  apptainer exec "${IMAGE}" arco-make unpack-zips ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
+  apptainer exec "${IMAGE}" arco-make unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
 
 UNPACK_EXIT_CODE=$?
 
