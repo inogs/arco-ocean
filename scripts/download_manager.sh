@@ -30,15 +30,22 @@ START_INDEX=$3
 MAX_INDEX=${4:-40}
 MAX_ARRAY_SIZE=${5:-10}
 WAIT_TIME=${6:-1800}
+LOG_DIR=$7
 
 # Change current directory to project root
-PROJECTROOT=$(git rev-parse --show-toplevel)
-cd "${PROJECTROOT}" || exit 1
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+cd "${PROJECT_ROOT}" || exit 1
+
+# Set default LOG_DIR and ensure it exists
+if [[ -z "${LOG_DIR}" ]]; then
+    LOG_DIR="${PROJECT_ROOT}/logs/download"
+fi
+mkdir -p "${LOG_DIR}"
 
 # Check arguments
 if [[ -z "${CONFIG}" ]]; then
-    echo "Usage: $0 CONFIG_NAME [JOB_ID] [START_INDEX] [MAX_INDEX] [MAX_ARRAY_SIZE] [WAIT_TIME]"
-    echo "Example: $0 arco-ocean_tres-1d_res-0p25_levels-10 \"\" 0 41 10 1800"
+    echo "Usage: $0 CONFIG_NAME [JOB_ID] [START_INDEX] [MAX_INDEX] [MAX_ARRAY_SIZE] [WAIT_TIME] [LOG_DIR]"
+    echo "Example: $0 arco-ocean_tres-1d_res-0p25_levels-10 \"\" 0 41 10 1800 \"\${PROJECT_ROOT}/logs/download\""
     exit 1
 fi
 
@@ -58,8 +65,7 @@ if [[ "${MAX_ARRAY_SIZE}" -gt 10 ]]; then
 fi
 
 # Redirect all output to a log file to avoid cluttering standard output
-mkdir -p logs
-MANAGER_LOG="logs/download_manager_${CONFIG}.log"
+MANAGER_LOG="${LOG_DIR}/download_manager_${CONFIG}.log"
 exec >> "${MANAGER_LOG}" 2>&1
 
 echo "============================================================"
@@ -88,7 +94,7 @@ if [[ -z "${JOB_ID}" ]]; then
     echo "Submitting new SLURM array for ${CONFIG}, indices ${START} to ${END}..."
     # Using --parsable to get only the job ID. 
     # Log name includes job ID and array task ID.
-    JOB_ID=$(sbatch --parsable --array=${START}-${END} --output="logs/%A_%a.log" scripts/download.slurm "${CONFIG}")
+    JOB_ID=$(sbatch --parsable --array=${START}-${END} --output="${LOG_DIR}/%A_%a.log" scripts/download.slurm "${CONFIG}")
     
     if [[ $? -ne 0 ]]; then
         echo "Error: Failed to submit job array."
@@ -122,7 +128,7 @@ SQUEUE_OUTPUT=$(squeue -j "${JOB_ID}" -r 2>/dev/null)
 
 for i in $(seq "${START}" "${END}"); do
     # Check if this index has finished successfully in the current job
-    if grep -q "Download completed successfully." logs/"${JOB_ID}"_"${i}".log 2>/dev/null; then
+    if grep -q "Download completed successfully." "${LOG_DIR}"/"${JOB_ID}"_"${i}".log 2>/dev/null; then
         echo "Task ${i}: Finished successfully (verified from logs)."
     else
         # Not successful yet, check if it's currently running in the tracked JOB_ID
@@ -154,10 +160,10 @@ if [[ "${ALL_FINISHED}" == "true" ]]; then
     fi
     
     echo "Relaunching for next batch with index=${NEXT_INDEX}..."
-    setsid --fork bash "$0" "${CONFIG}" "" "${NEXT_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}" "${WAIT_TIME}"
+    setsid --fork bash "$0" "${CONFIG}" "" "${NEXT_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}" "${WAIT_TIME}" "${LOG_DIR}"
 else
     # Still running
     echo "Job array ${JOB_ID} is still in progress."
     echo "Waiting and relaunching with same Job ID to check again..."
-    setsid --fork bash "$0" "${CONFIG}" "${JOB_ID}" "${START_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}" "${WAIT_TIME}"
+    setsid --fork bash "$0" "${CONFIG}" "${JOB_ID}" "${START_INDEX}" "${MAX_INDEX}" "${MAX_ARRAY_SIZE}" "${WAIT_TIME}" "${LOG_DIR}"
 fi

@@ -23,10 +23,12 @@ SYNOPSIS
 DESCRIPTION
     Options
         --no-array                              Whether to download dataset in a single SLURM job (default false).
-        --overwrite                             Whether to overwrite destination (default false).
         --start                                 Overwrite config start date.
         --end                                   Overwrite config end date.
         --output-dir                            Where to place the ouputs (default to $LEONARDO_DATA_ROOT/data/dataset).
+        --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
+        --overwrite                             Whether to overwrite destination (default false).
+        --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
 }
@@ -35,11 +37,14 @@ ARCO_OCEAN_ARRAY_START=1993-01-01
 ARCO_OCEAN_ARRAY_END=2021-07-01
 ARCO_OCEAN_ARRAY_STEP=256
 
-# Options default values
+# Default options
 ARRAY=true
 OVERWRITE=false
+LOG_LEVEL="info"
+IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
+
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "overwrite,no-array,start:,end:,output-dir:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "no-array,start:,end:,output-dir:,image:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -51,41 +56,48 @@ while true; do
             ARRAY=false
             shift
             ;;
-        (--overwrite)
-            OVERWRITE=true
-            shift
-            ;;
         (--start)
             START_DATE="${2}"
             shift 2
             ;;
         (--end)
-           END_DATE="${2}"
-           shift 2
-           ;;
+            END_DATE="${2}"
+            shift 2
+            ;;
         (--output-dir)
-           OUTPUT_DIR="${2}"
-           shift 2
-           ;;
+            OUTPUT_DIR="${2}"
+            shift 2
+            ;;
+        (--image)
+            IMAGE="${2}"
+            shift 2
+            ;;
+        (--overwrite)
+            OVERWRITE=true
+            shift
+            ;;
+        (--log-level)
+            LOG_LEVEL="$2"; shift 2
+            ;;
         (--help)
-           usage
-           exit 0
-           ;;
+            usage
+            exit 0
+            ;;
         (--)
-           shift
-           break
-           ;;
+            shift
+            break
+            ;;
         (*)
-           echo "Error: unrecognized option ${1}."
-           usage
-           exit 1
-           ;;
+            echo "Error: unrecognized option ${1}."
+            usage
+            exit 1
+            ;;
     esac
 done
 
 # Change current directory to project root
-PROJECTROOT=$(git rev-parse --show-toplevel)
-cd "${PROJECTROOT}" || exit 1
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+cd "${PROJECT_ROOT}" || exit 1
 
 # Set default path envs and module loading 
 source scripts/.env
@@ -97,15 +109,13 @@ load_modules
 apptainer --version || exit 1
 
 # Build command line flags
-FLAGS="--no-progress"
+FLAGS="--no-progress --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
 else
     FLAGS="${FLAGS} --no-overwrite"
 fi
-
-FLAGS="${FLAGS} --log-level=info"
 
 if [[ ${ARRAY} == true ]]; then
     START_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * SLURM_ARRAY_TASK_ID ))  days" +"%Y-%m-%d")
@@ -124,7 +134,7 @@ if [[ -n ${END_DATE} ]]; then
 fi
 
 # Determine config file and output paths using the remaining argument
-CONFIG_PATH="${PROJECTROOT}/configs/${1}.toml"
+CONFIG_PATH="${PROJECT_ROOT}/configs/${1}.toml"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
@@ -140,8 +150,7 @@ OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.zip"
 
 # Run arco-make
 export PYTHONWARNINGS='ignore::RuntimeWarning'
-export GOOGLE_CLOUD_PROJECT='arco-era5-reader'
-apptainer exec oras://ghcr.io/stefanocampanella/arco-make:latest arco-make download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
+apptainer exec "${IMAGE}" arco-make download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
 
 DOWNLOAD_EXIT_CODE=$?
 
@@ -154,5 +163,5 @@ else
     exit ${DOWNLOAD_EXIT_CODE}
 fi
 
-# Deactivate all environments (useless when run in a SLURM job)
+# Deactivate all environments
 unload_modules

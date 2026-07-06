@@ -33,6 +33,8 @@ EOF
 }
 
 # Default options
+START_DATE=1993-01-01
+END_DATE=2021-07-01
 OVERWRITE=false
 TIME_DIM="time"
 LOG_LEVEL="info"
@@ -119,7 +121,7 @@ load_modules
 apptainer --version || exit 1
 
 # Build command line flags
-FLAGS="--time-dim=${TIME_DIM} --log-level=${LOG_LEVEL} --scheduler-type=mpi --chunks=time:32,level:-1,lat:-1,lon:-1"
+FLAGS="--time-dim=${TIME_DIM} --log-level=${LOG_LEVEL} --scheduler-type=mpi --chunks=time:auto,level:-1,lat:-1,lon:-1"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
