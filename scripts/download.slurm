@@ -109,7 +109,7 @@ load_modules
 apptainer --version || exit 1
 
 # Build command line flags
-FLAGS="--no-progress --log-level=${LOG_LEVEL}"
+FLAGS="--no-progress --log-level=${LOG_LEVEL} --no-raise"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"

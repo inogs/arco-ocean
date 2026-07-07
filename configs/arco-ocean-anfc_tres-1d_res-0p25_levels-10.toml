@@ -195,6 +195,48 @@ name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
 set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 
+[datasets.glorys_bottom.checkpointing]
+step = '4D'
+compressor = {cname = 'lz4', clevel = 3}
+
+[[datasets.glorys_bottom.parts]]
+filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
+engine = 'copernicusmarine'
+variables = ['so', 'thetao']
+dataset_version = '202311'
+dataset_part = 'default'
+service = 'arco-geo-series'
+chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'sel'
+latitude = {start = -76.9167, stop = 89.9167}
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'get_bottom'
+depth_dim = 'depth'
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 1, latitude = -1, longitude = -1}}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'astype'
+dtype = 'float32'
+casting = 'same_kind'
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'rename'
+name_dict = {so = 'so_bottom', thetao = 'thetao_bottom'}
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
 [datasets.glorys_seaice.checkpointing]
 step = '128D'
 compressor = {cname = 'lz4', clevel = 3}
@@ -228,7 +270,6 @@ dtype = 'float32'
 [[datasets.glorys_seaice.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
-
 
 [[datasets.glorys_mask.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_static'
@@ -363,30 +404,26 @@ lat = -1
 lon = -1
 
 [[postprocess]]
+name = 'transpose'
+dims = ['time', 'level', 'lat', 'lon']
+
+[[postprocess]]
+name = 'masked_fill'
+mask_name = 'glorys_mask'
+fill_value = {thetao = 'thetao_bottom', so = 'so_bottom'}
+variables = ['thetao', 'so']
+
+[[postprocess]]
 name = 'masked_fill'
 mask_name = 'glorys_mask'
 fill_value = 0.0
-variables = ['usi', 'vsi', 'sithick', 'siconc']
-
-[[postprocess]]
-name = 'gaussian_blur_extrapolate'
-variables = ['so', 'thetao', 'vo', 'uo']
-gaussian_filter_kwargs = {sigma = 6.0, radius = 6, mode = 'nearest', output = 'float32'}
-
-[[postprocess]]
-name = 'apply_mask'
-mask_name = 'glorys_mask'
-variables = ['uo', 'vo', 'so', 'thetao']
+variables = ['uo', 'vo', 'usi', 'vsi', 'sithick', 'siconc']
 
 [[postprocess]]
 name = 'masked_fill'
 mask_name = 'waverys_mask'
 fill_value = 0.0
 variables = ['swh', 'swp', 'mwd', 'usd', 'vsd']
-
-[[postprocess]]
-name = 'transpose'
-dims = ['time', 'level', 'lat', 'lon']
 
 [save]
 consolidated = true
@@ -402,5 +439,5 @@ freq = '1D'
 
 [checks.ensure_no_nans]
 glofas_mask = ['uparea', 'dis24']
-glorys_mask = ['mlotst', 'uo', 'usi', 'vo', 'vsi', 'sithick', 'siconc', 'so', 'thetao', 'zos', 'glorys_deptho']
+glorys_mask = ['mlotst', 'uo', 'usi', 'vo', 'vsi', 'sithick', 'siconc', 'so', 'so_bottom', 'thetao', 'thetao_bottom', 'zos', 'glorys_deptho']
 waverys_mask = ['swh', 'swp', 'mwd', 'usd', 'vsd']
