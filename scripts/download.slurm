@@ -138,7 +138,7 @@ CONFIG_PATH="${PROJECT_ROOT}/configs/${1}.toml"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data/${1}"
+    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data/archive/${1}"
 fi
 
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
