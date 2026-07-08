@@ -20,12 +20,8 @@ variables = [
     '2m_dewpoint_temperature',
     '2m_temperature',
     'geopotential_at_surface',
-    'instantaneous_10m_wind_gust',
     'land_sea_mask',
-    'surface_pressure',
-    'surface_solar_radiation_downwards',
-    'surface_thermal_radiation_downwards',
-    'total_precipitation']
+    'mean_sea_level_pressure']
 
 [[datasets.era5.postprocess]]
 name = 'flip'
@@ -38,17 +34,6 @@ label = 'left'
 closed = 'left'
 reduce = 'mean'
 
-[[datasets.era5.postprocess]]
-name = 'rescale'
-
-[datasets.era5.postprocess.values]
-total_precipitation = 24.0
-surface_solar_radiation_downwards = 24.0
-surface_thermal_radiation_downwards = 24.0
-
-[[datasets.era5.postprocess]]
-name = 'clip_negative'
-variables = ['total_precipitation']
 
 [[datasets.era5.postprocess]]
 name = 'rename'
@@ -59,14 +44,55 @@ name = 'rename'
 2m_dewpoint_temperature = '2d'
 2m_temperature = '2t'
 geopotential_at_surface = 'z'
-instantaneous_10m_wind_gust = 'i10fg'
 land_sea_mask = 'lsm'
-surface_pressure = 'sp'
+mean_sea_level_pressure = 'msl'
+
+[[datasets.era5.postprocess]]
+name = 'rename_coordinates'
+name_dict = {latitude = 'lat', longitude = 'lon'}
+
+[datasets.era5_cumulative.checkpointing]
+step = '128D'
+compressor = {cname = 'lz4', clevel = 3}
+
+[[datasets.era5_cumulative.parts]]
+filename_or_obj = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
+engine = 'zarr'
+consolidated = true
+storage_options = {token = "anon"}
+chunks = {time = 24, latitude = -1, longitude = -1}
+
+[[datasets.era5_cumulative.postprocess]]
+name = 'select_variables'
+variables = [
+    'surface_solar_radiation_downwards',
+    'surface_thermal_radiation_downwards',
+    'total_precipitation']
+
+[[datasets.era5_cumulative.postprocess]]
+name = 'flip'
+dim = 'latitude'
+
+[[datasets.era5_cumulative.postprocess]]
+name = 'clip_negative'
+variables = ['total_precipitation']
+
+[[datasets.era5_cumulative.postprocess]]
+name = 'resample'
+time = '1 D'
+label = 'left'
+closed = 'left'
+reduce = 'sum'
+
+[[datasets.era5_cumulative.postprocess]]
+name = 'rename'
+
+[datasets.era5_cumulative.postprocess.name_dict]
 surface_solar_radiation_downwards = 'ssrd'
 surface_thermal_radiation_downwards = 'strd'
 total_precipitation = 'tp'
 
-[[datasets.era5.postprocess]]
+[[datasets.era5_cumulative.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
@@ -300,7 +326,7 @@ compressor = {cname = 'lz4', clevel = 3}
 [[datasets.waverys.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_PT3H-i'
 engine = 'copernicusmarine'
-variables = ['VHM0', 'VTM02', 'VMDR', 'VSDX', 'VSDY']
+variables = ['VHM0', 'VTM10', 'VMDR', 'VSDX', 'VSDY']
 dataset_version = '202411'
 dataset_part = 'default'
 service = 'arco-geo-series'
@@ -328,7 +354,7 @@ dtype = 'float32'
 
 [[datasets.waverys.postprocess]]
 name = 'rename'
-name_dict = {VHM0 = 'swh', VTM02 = 'swp', VSDX = 'usd', VSDY = 'vsd', VMDR = 'mwd'}
+name_dict = {VHM0 = 'swh', VTM10 = 'mwp', VSDX = 'usd', VSDY = 'vsd', VMDR = 'mwd'}
 
 [[datasets.waverys.postprocess]]
 name = 'rename_coordinates'
@@ -398,7 +424,7 @@ variables = ['uo', 'vo', 'usi', 'vsi', 'sithick', 'siconc']
 name = 'masked_fill'
 mask_name = 'waverys_mask'
 fill_value = 0.0
-variables = ['swh', 'swp', 'mwd', 'usd', 'vsd']
+variables = ['swh', 'mwp', 'mwd', 'usd', 'vsd']
 
 [save]
 consolidated = true
@@ -415,4 +441,4 @@ freq = '1D'
 [checks.ensure_no_nans]
 glofas_mask = ['uparea', 'dis24']
 glorys_mask = ['mlotst', 'uo', 'usi', 'vo', 'vsi', 'sithick', 'siconc', 'so', 'so_bottom', 'thetao', 'thetao_bottom', 'zos', 'glorys_deptho']
-waverys_mask = ['swh', 'swp', 'mwd', 'usd', 'vsd']
+waverys_mask = ['swh', 'mwp', 'mwd', 'usd', 'vsd']
