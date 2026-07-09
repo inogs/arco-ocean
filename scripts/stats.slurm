@@ -166,12 +166,12 @@ compactify_logs() {
     local ext combined f
     for ext in out err; do
         combined="${LOG_DIR}/${SLURM_JOB_ID}.${ext}"
-        for f in "${LOG_DIR}/${SLURM_JOB_ID}"_*."${ext}"; do
+        while IFS= read -r f; do
             [[ -e "${f}" ]] || continue
             echo "===== ${f##*/} =====" >> "${combined}"
             cat "${f}" >> "${combined}"
             rm -f "${f}"
-        done
+        done < <(printf '%s\n' "${LOG_DIR}/${SLURM_JOB_ID}"_*."${ext}" | sort -V)
     done
 }
 trap compactify_logs EXIT

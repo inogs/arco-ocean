@@ -145,7 +145,7 @@ apptainer --version || exit 1
 # Build command line flags
 FLAGS="--time-dim=${TIME_DIM} \
        --in-chunks=time:auto,level:-1,lat:-1,lon:-1 \
-       --out-chunks=time:1,level:-1,lat:-1,lon:-1 \
+       --out-chunks=dayofyear:1,level:-1,lat:-1,lon:-1 \
        --climatology-bin-dim=${CLIMATOLOGY_BIN_DIM} \
        --scheduler-type=mpi \
        --calendar=${CALENDAR} \
@@ -193,12 +193,12 @@ compactify_logs() {
     local ext combined f
     for ext in out err; do
         combined="${LOG_DIR}/${SLURM_JOB_ID}.${ext}"
-        for f in "${LOG_DIR}/${SLURM_JOB_ID}"_*."${ext}"; do
+        while IFS= read -r f; do
             [[ -e "${f}" ]] || continue
             echo "===== ${f##*/} =====" >> "${combined}"
             cat "${f}" >> "${combined}"
             rm -f "${f}"
-        done
+        done < <(printf '%s\n' "${LOG_DIR}/${SLURM_JOB_ID}"_*."${ext}" | sort -V)
     done
 }
 trap compactify_logs EXIT
