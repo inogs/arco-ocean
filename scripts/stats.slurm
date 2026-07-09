@@ -155,7 +155,7 @@ fi
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
-    LOG_DIR="${PROJECT_ROOT}/logs/compute_stats"
+    LOG_DIR="${PROJECT_ROOT}/logs/stats"
 fi
 if [[ ! -d "${LOG_DIR}" ]]; then
     mkdir -p "${LOG_DIR}"

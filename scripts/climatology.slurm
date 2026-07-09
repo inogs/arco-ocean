@@ -182,7 +182,7 @@ ANOMALY_STD_OUTPUT_PATH="${OUTPUT_DIR}/${1}_anomaly_std"
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
-    LOG_DIR="${PROJECT_ROOT}/logs/compute_climatology"
+    LOG_DIR="${PROJECT_ROOT}/logs/climatology"
 fi
 if [[ ! -d "${LOG_DIR}" ]]; then
     mkdir -p "${LOG_DIR}"
