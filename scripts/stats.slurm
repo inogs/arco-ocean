@@ -161,6 +161,21 @@ if [[ ! -d "${LOG_DIR}" ]]; then
     mkdir -p "${LOG_DIR}"
 fi
 
+# Compactify logs: concatenate all logs for this job and remove the originals
+compactify_logs() {
+    local ext combined f
+    for ext in out err; do
+        combined="${LOG_DIR}/${SLURM_JOB_ID}.${ext}"
+        for f in "${LOG_DIR}/${SLURM_JOB_ID}"_*."${ext}"; do
+            [[ -e "${f}" ]] || continue
+            echo "===== ${f##*/} =====" >> "${combined}"
+            cat "${f}" >> "${combined}"
+            rm -f "${f}"
+        done
+    done
+}
+trap compactify_logs EXIT
+
 
 # see:
 # https://bitbucket.org/mpi4py/mpi4py/issues/80/mpi_thread_multiple-vs-mpi_thread_single

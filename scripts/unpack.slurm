@@ -165,6 +165,21 @@ if [[ ! -d "${LOG_DIR}" ]]; then
     mkdir -p "${LOG_DIR}"
 fi
 
+# Compactify logs: concatenate all logs for this job and remove the originals
+compactify_logs() {
+    local ext combined f
+    for ext in out err; do
+        combined="${LOG_DIR}/${SLURM_JOB_ID}.${ext}"
+        for f in "${LOG_DIR}/${SLURM_JOB_ID}"_*."${ext}"; do
+            [[ -e "${f}" ]] || continue
+            echo "===== ${f##*/} =====" >> "${combined}"
+            cat "${f}" >> "${combined}"
+            rm -f "${f}"
+        done
+    done
+}
+trap compactify_logs EXIT
+
 
 # see:
 # https://bitbucket.org/mpi4py/mpi4py/issues/80/mpi_thread_multiple-vs-mpi_thread_single
@@ -178,8 +193,6 @@ export DASK_MPI__INTERFACE=ib0
 export DASK_MPI__PROTOCOL="tcp://"
 export DASK_MPI__NTHREADS=${SLURM_CPUS_PER_TASK}
 export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
-export DASK_MPI__LOG_DIR="${PROJECT_ROOT}/logs/dask"
-export PYTHONWARNINGS='ignore::RuntimeWarning'
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
   apptainer exec "${IMAGE}" arco-make unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
