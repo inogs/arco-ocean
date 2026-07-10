@@ -1,25 +1,21 @@
 #! /usr/bin/env bash
 #SBATCH --account=OGS23_PRACE_IT_1
 #SBATCH --partition=dcgp_usr_prod
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=28
-#SBATCH --cpus-per-task=4
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=14
+#SBATCH --cpus-per-task=8
 #SBATCH --exclusive
 #SBATCH --time=60
 #SBATCH --gres=tmpfs:3T
 #SBATCH --requeue
 
-# TODO: The current script used to compute both the climatology and other stats (mean, std, std_diff). However,
-#   computing the stats scales well, and these can be computed one after the other in a short job on, say, 4 nodes.
-#   Instead, the climatology does not scale due to communications, hence it would make more sense
-#   to have a longer job running on a single node and using a LocalCluster (one node) with the  inproc:// protocol,
-#   thus reducing the communication time.
-#   However, it turns out that this way there is a single core very busy, while the rest of the node sits idle. This is
-#   Probably due to the rading from zipped Zar files happening serially. Things to try next:
-#       1. Use a Dask-MPI cluster, as with other stats, but using the loopback interface to speedup communications.
-#       2. Create another version of the dataset, using the `365_day` calendar, and then read from it using a chunk size
-#           of 365 elements along the time dimension. This should avoid some communication due to chunk shuffling.
-#   Apparently, the first attempt was sufficient.
+# NOTICE: While computing the stats (mean, std, and diff std) scales well, computing the climatology using the 
+#   implementation in arco-make is slow and bounded by communications. As for the latter, it would make more sense
+#   to have a longer job running on a single node and using a LocalCluster with the  inproc:// protocol 
+#   (i.e., processes=False), thus reducing the communication (and serialization) time.
+#   That said, it turns out that in that case there is a single core very busy, while the rest of the node sits idle. 
+#   (The problem does not appear in experiments using dask-mpi and the infiniband/loopback interface).
+#   Moreover, large computational graphs are generated. Why? And what cause such a large amount of reshuffling?
 
 usage() {
     more <<EOF
@@ -150,6 +146,7 @@ FLAGS="--time-dim=${TIME_DIM} \
        --scheduler-type=mpi \
        --calendar=${CALENDAR} \
        --no-raise \
+       --sync \
        --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
@@ -210,9 +207,9 @@ trap compactify_logs EXIT
 # https://github.com/open-mpi/ompi/issues/9763
 # https://developer.skao.int/projects/ska-sdp-exec-iotest/en/latest/content/mpi_settings.html#slurm-specific-settings
 # https://docs.nvidia.com/networking/display/hpcxv211/hcoll
-export OMPI_MCA_btl_tcp_if_exclude=brmgt,enp1s0,ib0,virbr0
+export OMPI_MCA_btl_tcp_if_exclude=brmgt,enp1s0,lo,virbr0
 export OMPI_MCA_coll=^hcoll
-export DASK_MPI__INTERFACE=lo
+export DASK_MPI__INTERFACE=ib0
 export DASK_MPI__PROTOCOL="tcp://"
 export DASK_MPI__NTHREADS=${SLURM_CPUS_PER_TASK}
 export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
