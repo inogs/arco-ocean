@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 #SBATCH --account=OGS23_PRACE_IT_1
 #SBATCH --partition=dcgp_usr_prod
-#SBATCH --nodes=4
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=28
 #SBATCH --cpus-per-task=4
 #SBATCH --exclusive
@@ -123,7 +123,7 @@ apptainer --version || exit 1
 # Build command line flags
 FLAGS="--time-dim=${TIME_DIM} \
        --in-chunks=time:auto,level:-1,lat:-1,lon:-1 \
-       --out-chunks=time:1,level-1,lat:-1,lon:-1 \
+       --out-chunks=time:1,level:-1,lat:-1,lon:-1 \
        --scheduler-type=mpi \
        --log-level=${LOG_LEVEL}"
 
