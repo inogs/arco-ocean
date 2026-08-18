@@ -104,10 +104,11 @@ compressor = {cname = 'lz4', clevel = 3}
 [[datasets.glofas.parts]]
 filename_or_obj = 'ewds://cems-glofas-historical'
 engine = 'earlywarningdatastore'
-system_version = 'version_4_0'
+system_version = 'version_5_0'
 hydrological_model = 'lisflood'
 product_type = 'consolidated'
-variable = 'river_discharge_in_the_last_24_hours'
+timespan = 'time_mean'
+variable = 'average_river_discharge_in_the_last_24_hours'
 chunks = {time = 1, latitude = -1, longitude = -1}
 
 [[datasets.glofas.postprocess]]
@@ -124,15 +125,20 @@ casting = 'same_kind'
 dtype = 'float32'
 
 [[datasets.glofas.postprocess]]
+name = 'rename'
+name_dict = {avg_dis = 'dis24'}
+
+[[datasets.glofas.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
-[[datasets.glofas_mask.parts]]
+# NOTE: The static data should be updated to GloFAS v5.0 as soon as possible.
+[[datasets.glofas_static.parts]]
 filename_or_obj = 'https://confluence.ecmwf.int/download/attachments/242067380/uparea_glofas_v4_0.nc'
 engine = 'netcdfoverhttp'
 chunks = {latitude = -1, longitude = -1}
 
-[[datasets.glofas_mask.postprocess]]
+[[datasets.glofas_static.postprocess]]
 name = 'regrid'
 method = 'conservative'
 latitude_dim = 'latitude'
@@ -140,16 +146,16 @@ longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
-[[datasets.glofas_mask.postprocess]]
+[[datasets.glofas_static.postprocess]]
 name = 'astype'
 uparea = {dtype = 'float32', casting='same_kind'}
 
-[[datasets.glofas_mask.postprocess]]
+[[datasets.glofas_static.postprocess]]
 name = 'get_notnull_mask'
 variable = 'uparea'
 mask_name = 'glofas_mask'
 
-[[datasets.glofas_mask.postprocess]]
+[[datasets.glofas_static.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
@@ -296,7 +302,7 @@ dtype = 'float32'
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
-[[datasets.glorys_mask.parts]]
+[[datasets.glorys_static.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_static'
 engine = 'copernicusmarine'
 variables = ['deptho', 'depth']
@@ -304,11 +310,11 @@ dataset_part = 'bathy'
 service = 'static-arco'
 chunks = {depth = 1, latitude = -1, longitude = -1}
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'sel'
 latitude = {start = -76.9167, stop = 89.9167}
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'regrid'
 method = 'conservative'
 latitude_dim = 'latitude'
@@ -316,27 +322,27 @@ longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'astype'
 dtype = 'float32'
 casting = 'same_kind'
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'rename'
 name_dict = {deptho = 'glorys_deptho'}
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'get_sea_mask'
 bathymetry = 'glorys_deptho'
 depth_coordinate = 'depth'
 depth_dim = 'depth'
 mask_name = 'glorys_mask'
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'isel'
 depth = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]
 
-[[datasets.glorys_mask.postprocess]]
+[[datasets.glorys_static.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
 set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
@@ -384,7 +390,7 @@ name_dict = {VHM0 = 'swh', VTM10 = 'mwp', VSDX = 'usd', VSDY = 'vsd', VMDR = 'mw
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
-[[datasets.waverys_mask.parts]]
+[[datasets.waverys_static.parts]]
 filename_or_obj = 'cm://cmems_mod_wav_anfc_0.083deg_static'
 engine = 'copernicusmarine'
 dataset_version = '202311'
@@ -393,7 +399,7 @@ dataset_part = 'bathy'
 service = 'static-arco'
 chunks = {latitude = -1, longitude = -1}
 
-[[datasets.waverys_mask.postprocess]]
+[[datasets.waverys_static.postprocess]]
 name = 'regrid'
 method = 'conservative'
 latitude_dim = 'latitude'
@@ -401,21 +407,21 @@ longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
-[[datasets.waverys_mask.postprocess]]
+[[datasets.waverys_static.postprocess]]
 name = 'astype'
 dtype = 'float32'
 casting = 'same_kind'
 
-[[datasets.waverys_mask.postprocess]]
+[[datasets.waverys_static.postprocess]]
 name = 'is_positive_mask'
 variable = 'deptho'
 mask_name = 'waverys_mask'
 
-[[datasets.waverys_mask.postprocess]]
+[[datasets.waverys_static.postprocess]]
 name = 'rename'
 name_dict = {deptho = 'waverys_deptho'}
 
-[[datasets.waverys_mask.postprocess]]
+[[datasets.waverys_static.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 

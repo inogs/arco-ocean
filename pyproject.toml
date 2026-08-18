@@ -2,5 +2,27 @@
 name = "arco-ocean"
 version = "0.1.0"
 description = "Documentation and tutorials for the ARCO-OCEAN dataset"
-requires-python = ">=3.11"
-dependencies = ["xarray", "numpy", "cftime", "zarr", "obstore", "dask", "distributed", "jupyter", "pip", "matplotlib", "cartopy", "nc-time-axis"]
+requires-python = ">=3.13"
+dependencies = [
+    "xarray>=2025.1.1",
+    "numpy",
+    "cftime",
+    "zarr",
+    "obstore",
+    "dask",
+    "distributed",
+    "jupyter",
+    "pip",
+    "matplotlib",
+    "cartopy",
+    "nc-time-axis",
+    "arraylake>=0.33.0",
+    "netcdf4>=1.7.4",
+    "pooch>=1.9.0",
+    "ipython>=9.6.0",
+    "icechunk>=2",
+    "virtualizarr>=2.5.1",
+    "arro3-core>=0.8.0",
+    "scipy>=1.17.1",
+    "tqdm>=4.67.3",
+]
