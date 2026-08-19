@@ -25,8 +25,8 @@ DESCRIPTION
         dataset_name                            Name of the input dataset
 
     Options
-        --input-dir                             Where to look for data (default to \$LEONARDO_DATA_ROOT/data/dataset).
-        --output-dir                            Where to place the ouputs (default to \$LEONARDO_DATA_ROOT/data/stats).
+        --input-dir                             Where to look for data (default to \$DATA_ROOT/data/dataset).
+        --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/stats).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/compute_stats).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --overwrite                             Whether to overwrite destination (default false).
@@ -141,13 +141,13 @@ fi
 
 # Set default INPUT_DIR
 if [[ -z ${INPUT_DIR} ]]; then
-    INPUT_DIR="${LEONARDO_DATA_ROOT}/data/dataset"
+    INPUT_DIR="${DATA_ROOT}/data/dataset"
 fi
 INPUT_PATH="${INPUT_DIR}/${1}"
 
 # Set default OUTPUT_DIR and ensure it exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data/stats"
+    OUTPUT_DIR="${DATA_ROOT}/data/stats"
 fi
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"

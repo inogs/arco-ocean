@@ -25,8 +25,10 @@ DESCRIPTION
         --no-array                              Whether to download dataset in a single SLURM job (default false).
         --start                                 Overwrite config start date.
         --end                                   Overwrite config end date.
-        --output-dir                            Where to place the ouputs (default to $LEONARDO_DATA_ROOT/data/dataset).
+        --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/dataset).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
+        --env-file FILE                         Environment file to source (default scripts/.env).
+        --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
@@ -42,9 +44,11 @@ ARRAY=true
 OVERWRITE=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
+ENV_FILE="scripts/.env"
+BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "no-array,start:,end:,output-dir:,image:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "no-array,start:,end:,output-dir:,image:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -70,6 +74,14 @@ while true; do
             ;;
         (--image)
             IMAGE="${2}"
+            shift 2
+            ;;
+        (--env-file)
+            ENV_FILE="${2}"
+            shift 2
+            ;;
+        (--bind)
+            BINDS+=("${2}")
             shift 2
             ;;
         (--overwrite)
@@ -100,7 +112,13 @@ PROJECT_ROOT=$(git rev-parse --show-toplevel)
 cd "${PROJECT_ROOT}" || exit 1
 
 # Set default path envs and module loading 
-source scripts/.env
+if [[ -n ${ENV_FILE} ]]; then
+    if [[ ! -f ${ENV_FILE} ]]; then
+        echo "Error: environment file ${ENV_FILE} not found."
+        exit 1
+    fi
+    source "${ENV_FILE}"
+fi
 
 # Load default modules
 load_modules
@@ -138,7 +156,7 @@ CONFIG_PATH="${PROJECT_ROOT}/configs/${1}.toml"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data/archive/${1}"
+    OUTPUT_DIR="${DATA_ROOT}/data/archive/${1}"
 fi
 
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
@@ -148,9 +166,15 @@ fi
 OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.zip"
 
 
+# Build apptainer flags
+APPTAINER_FLAGS=()
+for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
+    APPTAINER_FLAGS+=(--bind "${BIND}")
+done
+
 # Run arco-make
 export PYTHONWARNINGS='ignore::RuntimeWarning'
-apptainer exec "${IMAGE}" arco-make download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
+apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}" download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
 
 DOWNLOAD_EXIT_CODE=$?
 

@@ -22,8 +22,8 @@ DESCRIPTION
     Options
         --start                                 Overwrite config start date.
         --end                                   Overwrite config end date.
-        --input-dir                             Where to look for data (defaut to $LEONARDO_DATA_ROOT/data/archive).
-        --output-dir                            Where to place the ouputs (default to $LEONARDO_DATA_ROOT/data/dataset).
+        --input-dir                             Where to look for data (defaut to $DATA_ROOT/data/archive).
+        --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/dataset).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/unpack).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --overwrite                             Whether to overwrite destination (default false).
@@ -139,13 +139,13 @@ fi
 
 # Set default INPUT_PATH
 if [[ -z ${INPUT_DIR} ]]; then
-    INPUT_DIR="${LEONARDO_DATA_ROOT}/data/archive"
+    INPUT_DIR="${DATA_ROOT}/data/archive"
 fi
 INPUT_PATH="${INPUT_DIR}/${1}"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${LEONARDO_DATA_ROOT}/data/dataset"
+    OUTPUT_DIR="${DATA_ROOT}/data/dataset"
 fi
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"
