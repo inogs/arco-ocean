@@ -164,7 +164,7 @@ FLAGS="--time-dim=${TIME_DIM} \
        --scheduler-type=mpi \
        --calendar=${CALENDAR} \
        --no-raise \
-       --sync \
+       --sync-step \
        --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
