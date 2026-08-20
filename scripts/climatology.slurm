@@ -37,6 +37,8 @@ DESCRIPTION
         --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/stats).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/compute_climatology).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
+        --env-file FILE                         Environment file to source (default scripts/.env).
+        --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
         --skipna                                Skip NaNs when averaging (default false).
         --time-dim DIM                          Name of the time dimension (default: time).
@@ -55,9 +57,11 @@ CLIMATOLOGY_BIN_DIM="dayofyear"
 CALENDAR="365_day"
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
+ENV_FILE="scripts/.env"
+BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,overwrite,skipna,time-dim:,climatology-bin-dim:,calendar:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,env-file:,bind:,overwrite,skipna,time-dim:,climatology-bin-dim:,calendar:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -80,6 +84,14 @@ while true; do
             ;;
         (--image)
             IMAGE="${2}"
+            shift 2
+            ;;
+        (--env-file)
+            ENV_FILE="${2}"
+            shift 2
+            ;;
+        (--bind)
+            BINDS+=("${2}")
             shift 2
             ;;
         (--overwrite)
@@ -130,7 +142,13 @@ PROJECT_ROOT=$(git rev-parse --show-toplevel)
 cd "${PROJECT_ROOT}" || exit 1
 
 # Set default path envs and module loading
-source scripts/.env
+if [[ -n ${ENV_FILE} ]]; then
+    if [[ ! -f ${ENV_FILE} ]]; then
+        echo "Error: environment file ${ENV_FILE} not found."
+        exit 1
+    fi
+    source "${ENV_FILE}"
+fi
 
 # Load default modules
 load_modules
@@ -214,8 +232,14 @@ export DASK_MPI__PROTOCOL="tcp://"
 export DASK_MPI__NTHREADS=${SLURM_CPUS_PER_TASK}
 export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
 
+# Build apptainer flags
+APPTAINER_FLAGS=()
+for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
+    APPTAINER_FLAGS+=(--bind "${BIND}")
+done
+
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  apptainer exec "${IMAGE}" arco-make compute-climatology ${FLAGS} -- "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}"
+  apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}" compute-climatology ${FLAGS} -- "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}"
 
 CLIMATOLOGY_EXIT_CODE=$?
 
