@@ -38,7 +38,7 @@ DESCRIPTION
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
-        --skipna                                Skip NaNs when averaging (default false).
+        --no-skipna                             Avoid skipping NaNs when averaging (default false).
         --time-dim DIM                          Name of the time dimension (default: time).
         --climatology-bin-dim DIM               Name of the climatology bin dimension (default: dayofyear).
         --calendar CALENDAR                     Calendar to use (default: 365_day).
@@ -49,7 +49,7 @@ EOF
 
 # Default options
 OVERWRITE=false
-SKIPNA=false
+SKIPNA=true
 TIME_DIM="time"
 CLIMATOLOGY_BIN_DIM="dayofyear"
 CALENDAR="365_day"
@@ -59,7 +59,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,env-file:,bind:,overwrite,skipna,time-dim:,climatology-bin-dim:,calendar:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,env-file:,bind:,overwrite,no-skipna,time-dim:,climatology-bin-dim:,calendar:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -96,8 +96,8 @@ while true; do
             OVERWRITE=true
             shift
             ;;
-        (--skipna)
-            SKIPNA=true
+        (--no-skipna)
+            SKIPNA=false
             shift
             ;;
         (--time-dim)
