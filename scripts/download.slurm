@@ -165,7 +165,6 @@ fi
 
 OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.zip"
 
-
 # Build apptainer flags
 APPTAINER_FLAGS=()
 for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do

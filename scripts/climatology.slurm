@@ -216,7 +216,6 @@ compactify_logs() {
 }
 trap compactify_logs EXIT
 
-
 # see:
 # https://github.com/open-mpi/ompi/issues/6240
 # https://developer.skao.int/projects/ska-sdp-exec-iotest/en/latest/content/mpi_settings.html#slurm-specific-settings
@@ -225,8 +224,8 @@ export OMPI_MCA_btl=self,tcp
 export OMPI_MCA_btl_tcp_if_include=ib0
 
 # see:
-# https://docs.nvidia.com/networking/display/hpcxv211/hcoll
 # https://github.com/open-mpi/ompi/issues/9763
+# https://docs.nvidia.com/networking/display/hpcxv211/hcoll
 export OMPI_MCA_coll=^hcoll
 
 # see:
