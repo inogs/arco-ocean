@@ -138,7 +138,11 @@ load_modules
 apptainer --version || exit 1
 
 # Build command line flags
-FLAGS="--time-dim=${TIME_DIM} --log-level=${LOG_LEVEL} --scheduler-type=mpi --chunks=time:auto,level:-1,lat:-1,lon:-1"
+FLAGS="--time-dim=${TIME_DIM} \
+       --log-level=${LOG_LEVEL} \
+       --scheduler-type=mpi \
+       --chunks=time:auto,level:-1,lat:-1,lon:-1 \
+       --attrs-to-drop=last_updated,valid_time_stop_era5t"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
