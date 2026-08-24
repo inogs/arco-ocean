@@ -1,5 +1,4 @@
 #! /usr/bin/env bash
-#SBATCH --account=OGS23_PRACE_IT_1
 #SBATCH --partition=dcgp_usr_prod
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=14
@@ -7,7 +6,6 @@
 #SBATCH --exclusive
 #SBATCH --time=60
 #SBATCH --gres=tmpfs:3T
-#SBATCH --requeue
 
 # NOTICE: While computing the stats (mean, std, and diff std) scales well, computing the climatology using the 
 #   implementation in arco-make is slow and bounded by communications. As for the latter, it would make more sense
@@ -220,13 +218,21 @@ trap compactify_logs EXIT
 
 
 # see:
-# https://bitbucket.org/mpi4py/mpi4py/issues/80/mpi_thread_multiple-vs-mpi_thread_single
 # https://github.com/open-mpi/ompi/issues/6240
-# https://github.com/open-mpi/ompi/issues/9763
 # https://developer.skao.int/projects/ska-sdp-exec-iotest/en/latest/content/mpi_settings.html#slurm-specific-settings
+# https://docs.open-mpi.org/en/main/tuning-apps/networking/tcp.html
+export OMPI_MCA_btl=self,tcp
+export OMPI_MCA_btl_tcp_if_include=ib0
+
+# see:
 # https://docs.nvidia.com/networking/display/hpcxv211/hcoll
-export OMPI_MCA_btl_tcp_if_exclude=brmgt,enp1s0,lo,virbr0
+# https://github.com/open-mpi/ompi/issues/9763
 export OMPI_MCA_coll=^hcoll
+
+# see:
+# https://docs.hpc.cineca.it/services/singularity.html#containers-in-hpc-environment
+export PMIX_MCA_gds=hash
+
 export DASK_MPI__INTERFACE=ib0
 export DASK_MPI__PROTOCOL="tcp://"
 export DASK_MPI__NTHREADS=${SLURM_CPUS_PER_TASK}
