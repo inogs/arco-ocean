@@ -38,9 +38,9 @@ DESCRIPTION
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
-        --no-skipna                             Avoid skipping NaNs when averaging (default false).
         --time-dim DIM                          Name of the time dimension (default: time).
         --climatology-bin-dim DIM               Name of the climatology bin dimension (default: dayofyear).
+        --window WINDOW                         Window size (default: 15).
         --calendar CALENDAR                     Calendar to use (default: 365_day).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
@@ -49,17 +49,17 @@ EOF
 
 # Default options
 OVERWRITE=false
-SKIPNA=true
 TIME_DIM="time"
 CLIMATOLOGY_BIN_DIM="dayofyear"
 CALENDAR="365_day"
+WINDOW=15
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,env-file:,bind:,overwrite,no-skipna,time-dim:,climatology-bin-dim:,calendar:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,env-file:,bind:,overwrite,time-dim:,climatology-bin-dim:,window:,calendar:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -96,15 +96,14 @@ while true; do
             OVERWRITE=true
             shift
             ;;
-        (--no-skipna)
-            SKIPNA=false
-            shift
-            ;;
         (--time-dim)
             TIME_DIM="$2"; shift 2
             ;;
         (--climatology-bin-dim)
             CLIMATOLOGY_BIN_DIM="$2"; shift 2
+            ;;
+        (--window)
+            WINDOW="$2"; shift 2
             ;;
         (--calendar)
             CALENDAR="$2"; shift 2
@@ -159,6 +158,7 @@ FLAGS="--time-dim=${TIME_DIM} \
        --in-chunks=time:auto,level:-1,lat:-1,lon:-1 \
        --out-chunks=dayofyear:1,level:-1,lat:-1,lon:-1 \
        --climatology-bin-dim=${CLIMATOLOGY_BIN_DIM} \
+       --window=${WINDOW} \
        --scheduler-type=mpi \
        --calendar=${CALENDAR} \
        --no-raise \
@@ -169,12 +169,6 @@ if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
 else
     FLAGS="${FLAGS} --no-overwrite"
-fi
-
-if [[ ${SKIPNA} == true ]]; then
-    FLAGS="${FLAGS} --skipna"
-else
-    FLAGS="${FLAGS} --no-skipna"
 fi
 
 # Set default INPUT_DIR
