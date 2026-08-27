@@ -25,6 +25,7 @@ DESCRIPTION
         --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/dataset).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/unpack).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
+        --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
@@ -40,11 +41,12 @@ OVERWRITE=false
 TIME_DIM="time"
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
+VENV=""
 ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,env-file:,bind:,overwrite,time-dim:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,time-dim:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -75,6 +77,10 @@ while true; do
             ;;
         (--image)
             IMAGE="${2}"
+            shift 2
+            ;;
+        (--virtual-env)
+            VENV="${2}"
             shift 2
             ;;
         (--env-file)
@@ -134,8 +140,10 @@ fi
 # Load default modules
 load_modules
 
-# Check that apptainer is installed
-apptainer --version || exit 1
+# Check that apptainer is installed (only when not running from a local virtual environment)
+if [[ -z ${VENV} ]]; then
+    apptainer --version || exit 1
+fi
 
 # Build command line flags
 FLAGS="--time-dim=${TIME_DIM} \
@@ -222,14 +230,19 @@ export DASK_MPI__PROTOCOL="tcp://"
 export DASK_MPI__NTHREADS=${SLURM_CPUS_PER_TASK}
 export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
 
-# Build apptainer flags
-APPTAINER_FLAGS=()
-for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
-    APPTAINER_FLAGS+=(--bind "${BIND}")
-done
+# Build the run command: either a local virtual environment or an Apptainer image
+if [[ -n ${VENV} ]]; then
+    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run arco-make)
+else
+    APPTAINER_FLAGS=()
+    for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
+        APPTAINER_FLAGS+=(--bind "${BIND}")
+    done
+    RUN_CMD=(apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}")
+fi
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}" unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
+  "${RUN_CMD[@]}" unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
 
 UNPACK_EXIT_CODE=$?
 
