@@ -149,8 +149,7 @@ fi
 FLAGS="--time-dim=${TIME_DIM} \
        --log-level=${LOG_LEVEL} \
        --scheduler-type=mpi \
-       --chunks=time:auto,level:-1,lat:-1,lon:-1 \
-       --attrs-to-drop=last_updated,valid_time_stop_era5t"
+       --chunks=time:auto,level:-1,lat:-1,lon:-1"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
