@@ -34,7 +34,6 @@ label = 'left'
 closed = 'left'
 reduce = 'mean'
 
-
 [[datasets.era5.postprocess]]
 name = 'rename'
 
@@ -50,6 +49,14 @@ mean_sea_level_pressure = 'msl'
 [[datasets.era5.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
+
+[[datasets.era5.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.era5.postprocess]]
+name = 'drop_attrs'
+deep = false
 
 [datasets.era5_cumulative.checkpointing]
 step = '128D'
@@ -96,6 +103,14 @@ total_precipitation = 'tp'
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
+[[datasets.era5_cumulative.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.era5_cumulative.postprocess]]
+name = 'drop_attrs'
+deep = false
+
 # ==== GLOFAS SECTION ====
 
 [datasets.glofas.checkpointing]
@@ -133,6 +148,14 @@ name_dict = {avg_dis = 'dis24'}
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
+[[datasets.glofas.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.glofas.postprocess]]
+name = 'drop_attrs'
+deep = false
+
 # NOTE: The static data should be updated to GloFAS v5.0 as soon as possible.
 [[datasets.glofas_static.parts]]
 filename_or_obj = 'https://confluence.ecmwf.int/download/attachments/242067380/uparea_glofas_v4_0.nc'
@@ -159,6 +182,14 @@ mask_name = 'glofas_mask'
 [[datasets.glofas_static.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
+
+[[datasets.glofas_static.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon']
+
+[[datasets.glofas_static.postprocess]]
+name = 'drop_attrs'
+deep = false
 
 # ==== GLORYS SECTION ====
 
@@ -200,6 +231,14 @@ dtype = 'float32'
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
 set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
+
+[[datasets.glorys.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.glorys.postprocess]]
+name = 'drop_attrs'
+deep = false
 
 [datasets.glorys_bottom.checkpointing]
 step = '4D'
@@ -243,6 +282,14 @@ name_dict = {so = 'so_bottom', thetao = 'thetao_bottom'}
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
+[[datasets.glorys_bottom.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.glorys_bottom.postprocess]]
+name = 'drop_attrs'
+deep = false
+
 [datasets.glorys_seaice.checkpointing]
 step = '128D'
 compressor = {cname = 'lz4', clevel = 3}
@@ -276,6 +323,14 @@ dtype = 'float32'
 [[datasets.glorys_seaice.postprocess]]
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
+
+[[datasets.glorys_seaice.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.glorys_seaice.postprocess]]
+name = 'drop_attrs'
+deep = false
 
 [[datasets.glorys_static.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_static'
@@ -323,6 +378,14 @@ name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
 set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 
+[[datasets.glorys_static.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'depth', 'level']
+
+[[datasets.glorys_static.postprocess]]
+name = 'drop_attrs'
+deep = false
+
 # ==== WAVERYS SECTION ====
 
 [datasets.waverys.checkpointing]
@@ -366,6 +429,14 @@ name_dict = {VHM0 = 'swh', VTM10 = 'mwp', VSDX = 'usd', VSDY = 'vsd', VMDR = 'mw
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
+[[datasets.waverys.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon', 'time']
+
+[[datasets.waverys.postprocess]]
+name = 'drop_attrs'
+deep = false
+
 [[datasets.waverys_static.parts]]
 filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_static'
 engine = 'copernicusmarine'
@@ -401,6 +472,14 @@ name_dict = {deptho = 'waverys_deptho'}
 name = 'rename_coordinates'
 name_dict = {latitude = 'lat', longitude = 'lon'}
 
+[[datasets.waverys_static.postprocess]]
+name = 'drop_var_attrs'
+variables = ['lat', 'lon']
+
+[[datasets.waverys_static.postprocess]]
+name = 'drop_attrs'
+deep = false
+
 # ==== SAVING SECTION ====
 
 [[postprocess]]
@@ -432,10 +511,82 @@ mask_name = 'waverys_mask'
 fill_value = 0.0
 variables = ['swh', 'mwp', 'mwd', 'usd', 'vsd']
 
+[[postprocess]]
+name = 'assign_var_attrs'
+
+[postprocess.lat]
+standard_name = 'latitude'
+long_name = 'latitude'
+units = 'degrees_north'
+unit_long = 'Degrees North'
+axis = 'Y'
+
+[postprocess.lon]
+standard_name = 'longitude'
+long_name = 'longitude'
+units = 'degrees_east'
+unit_long = 'Degrees East'
+axis = 'X'
+
+[postprocess.time]
+standard_name = 'time'
+long_name = 'time'
+axis = 'T'
+
+[postprocess.depth]
+standard_name = "depth"
+long_name = "ocean depth below geoid"
+units = "m"
+positive = "down"
+axis = "Z"
+comment = "Physical depths corresponding to subsampled GLORYS12 model levels (0.49m to 902.34m)."
+
+[postprocess.level]
+standard_name = "model_level_number"
+long_name = "subsampled vertical level index"
+units = "1"
+axis = "Z"
+comment = "Integer indices (0-9) mapping to original GLORYS12 model levels [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]."
+
+[[postprocess]]
+name = 'assign_attrs'
+title = "ARCO-OCEAN: Analysis-Ready Cloud-Optimized Ocean Dataset"
+summary = "A cloud-optimized dataset of ocean physical properties, sea ice, wave dynamics, and atmospheric/hydrological forcing designed for training data-driven S2S ocean forecasting models."
+id = "https://doi.org/10.5281/zenodo.17751760"
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Merged retrospective reanalyses and hindcasts: CMEMS GLORYS12 (ocean & sea ice), CMEMS WAVERYS (waves), ECMWF ERA5 (atmosphere), and GloFAS v5.0 (river discharge)."
+history = "Interpolated from native grids to global 0.25 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format."
+license = "CC-BY-4.0"
+attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
+references = "https://github.com/inogs/arco-ocean"
+geospatial_lat_min = -90.0
+geospatial_lat_max = 90.0
+geospatial_lat_units = "degrees_north"
+geospatial_lat_resolution = "0.25 degree"
+geospatial_lon_min = -180.0
+geospatial_lon_max = 180.0
+geospatial_lon_units = "degrees_east"
+geospatial_lon_resolution = "0.25 degree"
+geospatial_vertical_min = 0.494
+geospatial_vertical_max = 902.339
+geospatial_vertical_units = "m"
+geospatial_vertical_positive = "down"
+time_coverage_start = "1993-01-01T00:00:00Z"
+time_coverage_end = "2021-06-30T00:00:00Z"
+time_coverage_resolution = "P1D"
+featureType = "grid"
+
 [save]
 consolidated = true
 chunk = {time = 1, level = -1, lat = -1, lon = -1}
 compressor = {cname = 'lz4', clevel = 1}
+
+[save.encoding.time]
+units = 'days since 1970-01-01'
+calendar = 'standard'
+dtype = 'int32'
 
 [checks.valid_global_ecmwf_coordinates]
 latitude_dim = 'lat'

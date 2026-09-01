@@ -1,5 +1,5 @@
-start = 2024-01-01T00:00:00
-end = 2025-01-04T00:00:00
+start = 1993-01-01T00:00:00
+end = 2021-07-01T00:00:00
 
 [datasets.era5.checkpointing]
 step = '128D'
@@ -26,6 +26,13 @@ variables = [
 [[datasets.era5.postprocess]]
 name = 'flip'
 dim = 'latitude'
+
+[[datasets.era5.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.era5.postprocess]]
 name = 'resample'
@@ -81,6 +88,13 @@ name = 'flip'
 dim = 'latitude'
 
 [[datasets.era5_cumulative.postprocess]]
+name = 'regrid'
+method = 'conservative'
+latitude_dim = 'latitude'
+longitude_dim = 'longitude'
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
+
+[[datasets.era5_cumulative.postprocess]]
 name = 'clip_negative'
 variables = ['total_precipitation']
 
@@ -133,7 +147,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.glofas.postprocess]]
 name = 'astype'
@@ -168,7 +182,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold = 0.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.glofas_static.postprocess]]
 name = 'astype'
@@ -191,43 +205,17 @@ variables = ['lat', 'lon']
 name = 'drop_attrs'
 deep = false
 
-# ==== GLORYS SECTION (Analysis and Forecast) ====
+# ==== GLORYS SECTION ====
 
 [datasets.glorys.checkpointing]
 step = '4D'
 compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m'
+filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
 engine = 'copernicusmarine'
-variables = ['mlotst', 'zos']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
-chunks = {time = 1, latitude = -1, longitude = -1}
-
-[[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['so']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
-chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
-
-[[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['thetao']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
-chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
-
-[[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy-cur_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['uo', 'vo']
+variables = ['uo', 'vo', 'so', 'thetao', 'mlotst', 'zos']
+dataset_version = '202311'
 dataset_part = 'default'
 service = 'arco-geo-series'
 chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
@@ -246,7 +234,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.glorys.postprocess]]
 name = 'astype'
@@ -293,7 +281,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.glorys_bottom.postprocess]]
 name = 'astype'
@@ -321,10 +309,10 @@ step = '128D'
 compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.glorys_seaice.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m'
+filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
 engine = 'copernicusmarine'
 variables = ['sithick', 'siconc', 'usi', 'vsi']
-dataset_version = '202406'
+dataset_version = '202311'
 dataset_part = 'default'
 service = 'arco-geo-series'
 chunks = {time = 1, latitude = -1, longitude = -1}
@@ -339,7 +327,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.glorys_seaice.postprocess]]
 name = 'astype'
@@ -359,9 +347,10 @@ name = 'drop_attrs'
 deep = false
 
 [[datasets.glorys_static.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_static'
+filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_static'
 engine = 'copernicusmarine'
 variables = ['deptho', 'depth']
+dataset_version = '202311'
 dataset_part = 'bathy'
 service = 'static-arco'
 chunks = {depth = 1, latitude = -1, longitude = -1}
@@ -376,7 +365,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.glorys_static.postprocess]]
 name = 'astype'
@@ -418,7 +407,7 @@ step = '64D'
 compressor = {cname = 'lz4', clevel = 3}
 
 [[datasets.waverys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_wav_anfc_0.083deg_PT3H-i'
+filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_PT3H-i'
 engine = 'copernicusmarine'
 variables = ['VHM0', 'VTM10', 'VMDR', 'VSDX', 'VSDY']
 dataset_version = '202411'
@@ -432,7 +421,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 24, latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.waverys.postprocess]]
 name = 'resample'
@@ -463,7 +452,7 @@ name = 'drop_attrs'
 deep = false
 
 [[datasets.waverys_static.parts]]
-filename_or_obj = 'cm://cmems_mod_wav_anfc_0.083deg_static'
+filename_or_obj = 'cm://cmems_mod_glo_wav_my_0.2deg_static'
 engine = 'copernicusmarine'
 dataset_version = '202311'
 variables = 'deptho'
@@ -477,7 +466,7 @@ method = 'conservative'
 latitude_dim = 'latitude'
 longitude_dim = 'longitude'
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
 
 [[datasets.waverys_static.postprocess]]
 name = 'astype'
@@ -582,24 +571,24 @@ Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
 creator_name = "OGS ARCO-OCEAN Development Team"
 source = "Merged retrospective reanalyses and hindcasts: CMEMS GLORYS12 (ocean & sea ice), CMEMS WAVERYS (waves), ECMWF ERA5 (atmosphere), and GloFAS v5.0 (river discharge)."
-history = "Interpolated from native grids to global 0.25 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format."
+history = "Interpolated from native grids to global 0.5 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format."
 license = "CC-BY-4.0"
 attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
 references = "https://github.com/inogs/arco-ocean"
 geospatial_lat_min = -90.0
 geospatial_lat_max = 90.0
 geospatial_lat_units = "degrees_north"
-geospatial_lat_resolution = "0.25 degree"
+geospatial_lat_resolution = "0.5 degree"
 geospatial_lon_min = -180.0
 geospatial_lon_max = 180.0
 geospatial_lon_units = "degrees_east"
-geospatial_lon_resolution = "0.25 degree"
+geospatial_lon_resolution = "0.5 degree"
 geospatial_vertical_min = 0.494
 geospatial_vertical_max = 902.339
 geospatial_vertical_units = "m"
 geospatial_vertical_positive = "down"
-time_coverage_start = "2024-01-01T00:00:00Z"
-time_coverage_end = "2025-01-03T00:00:00Z"
+time_coverage_start = "1993-01-01T00:00:00Z"
+time_coverage_end = "2021-06-30T00:00:00Z"
 time_coverage_resolution = "P1D"
 featureType = "grid"
 
