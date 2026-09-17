@@ -29,15 +29,15 @@ calendar = "365_day"
 
 # ==== POSTPROCESSING PIPELINES ====
 # Applied to the computed climatological mean dataset
-[[climatology.postprocess]]
+[[postprocess_climatology]]
 name = "assign_var_attrs"
 
-[climatology.postprocess.dayofyear]
+[postprocess_climatology.dayofyear]
 standard_name = "time"
 long_name = "climatological time"
 axis = "T"
 
-[[climatology.postprocess]]
+[[postprocess_climatology]]
 name = "assign_attrs"
 title = "ARCO-OCEAN Daily Climatology (1993 - 2020)"
 summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2020 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
@@ -69,15 +69,15 @@ climatology_base_period = "1993 - 2020"
 featureType = "grid"
 
 # Applied to the computed anomaly standard deviation dataset
-[[anomaly_std.postprocess]]
+[[postprocess_anomaly_std]]
 name = "assign_var_attrs"
 
-[anomaly_std.postprocess.dayofyear]
+[postprocess_anomaly_std.dayofyear]
 standard_name = "time"
 long_name = "climatological time"
 axis = "T"
 
-[[anomaly_std.postprocess]]
+[[postprocess_anomaly_std]]
 name = "assign_attrs"
 title = "ARCO-OCEAN Daily Anomaly Standard Deviations (1993 - 2020)"
 summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2020 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
@@ -113,13 +113,3 @@ featureType = "grid"
 consolidated = true
 chunk = {dayofyear = 1, level = -1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}
-
-# ==== CHECKS CONFIGURATION ====
-#[checks.valid_global_ecmwf_coordinates]
-#latitude_dim = "lat"
-#longitude_dim = "lon"
-#
-#[checks.ensure_no_nans]
-#glofas_mask = ["uparea", "dis24"]
-#glorys_mask = ["mlotst", "uo", "usi", "vo", "vsi", "sithick", "siconc", "so", "so_bottom", "thetao", "thetao_bottom", "zos", "glorys_deptho"]
-#waverys_mask = ["swh", "mwp", "mwd", "usd", "vsd"]
