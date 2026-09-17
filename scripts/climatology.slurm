@@ -1,10 +1,10 @@
 #! /usr/bin/env bash
 #SBATCH --partition=dcgp_usr_prod
-#SBATCH --nodes=4
-#SBATCH --ntasks-per-node=14
-#SBATCH --cpus-per-task=8
+#SBATCH --nodes=8
+#SBATCH --ntasks-per-node=7
+#SBATCH --cpus-per-task=16
 #SBATCH --exclusive
-#SBATCH --time=60
+#SBATCH --time=500
 #SBATCH --gres=tmpfs:3T
 
 # NOTICE: While computing the stats (mean, std, and diff std) scales well, computing the climatology using the 
@@ -19,17 +19,15 @@ usage() {
     more <<EOF
 compute_climatology.slurm
     This script computes the daily climatology from a Zarr dataset using arco-make.
-    It requires Apptainer to be installed. The script reads the input dataset named dataset_name from
-    INPUT_DIR and writes the climatology to "OUTPUT_DIR/dataset_name_climatology".
+    It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
+    INPUT_DIR and writes the climatology to "OUTPUT_DIR/CONFIG_NAME_climatology".
+    The script will look into "configs/climatology" for a TOML recipe named CONFIG_NAME.
 
 SYNOPSIS
     usage: $0 --help
-    usage: $0 [options] dataset_name
+    usage: $0 [options] CONFIG_NAME
 
 DESCRIPTION
-    Positional arguments
-        dataset_name                            Name of the input dataset
-
     Options
         --input-dir                             Where to look for data (default to \$DATA_ROOT/data/dataset).
         --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/stats).
@@ -39,10 +37,7 @@ DESCRIPTION
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
-        --time-dim DIM                          Name of the time dimension (default: time).
-        --climatology-bin-dim DIM               Name of the climatology bin dimension (default: dayofyear).
-        --window WINDOW                         Window size (default: 15).
-        --calendar CALENDAR                     Calendar to use (default: 365_day).
+        --no-sync-step                          Whether to synchronize steps (default true).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
@@ -50,10 +45,7 @@ EOF
 
 # Default options
 OVERWRITE=false
-TIME_DIM="time"
-CLIMATOLOGY_BIN_DIM="dayofyear"
-CALENDAR="365_day"
-WINDOW=15
+SYNC_STEP=true
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -61,7 +53,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,time-dim:,climatology-bin-dim:,window:,calendar:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,no-sync-step,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -102,17 +94,9 @@ while true; do
             OVERWRITE=true
             shift
             ;;
-        (--time-dim)
-            TIME_DIM="$2"; shift 2
-            ;;
-        (--climatology-bin-dim)
-            CLIMATOLOGY_BIN_DIM="$2"; shift 2
-            ;;
-        (--window)
-            WINDOW="$2"; shift 2
-            ;;
-        (--calendar)
-            CALENDAR="$2"; shift 2
+        (--no-sync-step)
+            SYNC_STEP=false
+            shift
             ;;
         (--log-level)
             LOG_LEVEL="$2"; shift 2
@@ -133,9 +117,9 @@ while true; do
     esac
 done
 
-# Remaining args: dataset name
+# Remaining args: config name
 if [[ $# -lt 1 ]]; then
-    echo "Error: missing required argument dataset name" >&2
+    echo "Error: missing required argument config name" >&2
     usage
     exit 1
 fi
@@ -162,15 +146,7 @@ if [[ -z ${VENV} ]]; then
 fi
 
 # Build command line flags
-FLAGS="--time-dim=${TIME_DIM} \
-       --in-chunks=time:auto,level:-1,lat:-1,lon:-1 \
-       --out-chunks=dayofyear:1,level:-1,lat:-1,lon:-1 \
-       --climatology-bin-dim=${CLIMATOLOGY_BIN_DIM} \
-       --window=${WINDOW} \
-       --scheduler-type=mpi \
-       --calendar=${CALENDAR} \
-       --no-raise \
-       --sync-step \
+FLAGS="--scheduler-type=mpi \
        --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
@@ -178,6 +154,15 @@ if [[ ${OVERWRITE} == true ]]; then
 else
     FLAGS="${FLAGS} --no-overwrite"
 fi
+
+if [[ ${SYNC_STEP} == true ]]; then
+    FLAGS="${FLAGS} --sync-step"
+else
+    FLAGS="${FLAGS} --no-sync-step"
+fi
+
+# Determine config file and input/output paths using the remaining argument
+CONFIG_PATH="${PROJECT_ROOT}/configs/climatology/${1}.toml"
 
 # Set default INPUT_DIR
 if [[ -z ${INPUT_DIR} ]]; then
@@ -239,9 +224,15 @@ export DASK_MPI__PROTOCOL="tcp://"
 export DASK_MPI__NTHREADS=${SLURM_CPUS_PER_TASK}
 export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
 
+# Increase all timers trying to avoid "Futures cancelled for reason: scheduler-connection-lost."
+export DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT="300s"
+export DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP="300s"
+export DASK_DISTRIBUTED__SCHEDULER__WORKER_TTL="600s"
+export DASK_DISTRIBUTED__CLIENT__HEARTBEAT="10s"
+
 # Build the run command: either a local virtual environment or an Apptainer image
 if [[ -n ${VENV} ]]; then
-    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run arco-make)
+    RUN_CMD=(env UV_PROJECT_ENVIRONMENT="${VENV}" uv run --no-sync arco-make)
 else
     APPTAINER_FLAGS=()
     for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
@@ -251,7 +242,7 @@ else
 fi
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  "${RUN_CMD[@]}" compute-climatology ${FLAGS} -- "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}"
+  "${RUN_CMD[@]}" compute-climatology ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}"
 
 CLIMATOLOGY_EXIT_CODE=$?
 

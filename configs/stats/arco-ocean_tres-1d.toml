@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# ==== STATS PARAMETERS ====
+time_dim = "time"
+skipna = true
+
+# ==== READING CONFIGURATION ====
+[read]
+inline_array = false
+chunks = {time = "auto", level = -1, lat = -1, lon = -1}
+
+# ==== PREPROCESSING PIPELINES ====
+[[preprocess]]
+name = "sel"
+time = {start = "1993-01-01", end = "2020-12-31"}
+
+[[preprocess]]
+name = "drop_static_vars"
+time_dim = "time"
+
+# ==== SAVING CONFIGURATION ====
+[save]
+consolidated = true
+chunk = {level = -1, lat = -1, lon = -1}
+compressor = {cname = "lz4", clevel = 1}
+

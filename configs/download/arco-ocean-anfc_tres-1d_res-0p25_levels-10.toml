@@ -1,562 +1,564 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
 start = 2024-01-01T00:00:00
 end = 2025-01-04T00:00:00
 
 [datasets.era5.checkpointing]
-step = '128D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "128D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.era5.parts]]
-filename_or_obj = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
-engine = 'zarr'
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+engine = "zarr"
 consolidated = true
 storage_options = {token = "anon"}
 chunks = {time = 24, latitude = -1, longitude = -1}
 
 [[datasets.era5.postprocess]]
-name = 'select_variables'
+name = "select_variables"
 variables = [
-    '10m_u_component_of_wind',
-    '10m_v_component_of_wind',
-    '2m_dewpoint_temperature',
-    '2m_temperature',
-    'geopotential_at_surface',
-    'land_sea_mask',
-    'mean_sea_level_pressure']
+    "10m_u_component_of_wind",
+    "10m_v_component_of_wind",
+    "2m_dewpoint_temperature",
+    "2m_temperature",
+    "geopotential_at_surface",
+    "land_sea_mask",
+    "mean_sea_level_pressure"]
 
 [[datasets.era5.postprocess]]
-name = 'flip'
-dim = 'latitude'
+name = "flip"
+dim = "latitude"
 
 [[datasets.era5.postprocess]]
-name = 'resample'
-time = '1 D'
-label = 'left'
-closed = 'left'
-reduce = 'mean'
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "mean"
 
 [[datasets.era5.postprocess]]
-name = 'rename'
+name = "rename"
 
 [datasets.era5.postprocess.name_dict]
-10m_u_component_of_wind = '10u'
-10m_v_component_of_wind = '10v'
-2m_dewpoint_temperature = '2d'
-2m_temperature = '2t'
-geopotential_at_surface = 'z'
-land_sea_mask = 'lsm'
-mean_sea_level_pressure = 'msl'
+10m_u_component_of_wind = "10u"
+10m_v_component_of_wind = "10v"
+2m_dewpoint_temperature = "2d"
+2m_temperature = "2t"
+geopotential_at_surface = "z"
+land_sea_mask = "lsm"
+mean_sea_level_pressure = "msl"
 
 [[datasets.era5.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.era5.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.era5.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 [datasets.era5_cumulative.checkpointing]
-step = '128D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "128D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.era5_cumulative.parts]]
-filename_or_obj = 'gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3'
-engine = 'zarr'
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+engine = "zarr"
 consolidated = true
 storage_options = {token = "anon"}
 chunks = {time = 24, latitude = -1, longitude = -1}
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'select_variables'
+name = "select_variables"
 variables = [
-    'surface_solar_radiation_downwards',
-    'surface_thermal_radiation_downwards',
-    'total_precipitation']
+    "surface_solar_radiation_downwards",
+    "surface_thermal_radiation_downwards",
+    "total_precipitation"]
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'flip'
-dim = 'latitude'
+name = "flip"
+dim = "latitude"
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'clip_negative'
-variables = ['total_precipitation']
+name = "clip_negative"
+variables = ["total_precipitation"]
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'resample'
-time = '1 D'
-label = 'left'
-closed = 'left'
-reduce = 'sum'
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "sum"
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'rename'
+name = "rename"
 
 [datasets.era5_cumulative.postprocess.name_dict]
-surface_solar_radiation_downwards = 'ssrd'
-surface_thermal_radiation_downwards = 'strd'
-total_precipitation = 'tp'
+surface_solar_radiation_downwards = "ssrd"
+surface_thermal_radiation_downwards = "strd"
+total_precipitation = "tp"
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.era5_cumulative.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 # ==== GLOFAS SECTION ====
 
 [datasets.glofas.checkpointing]
-step = '64D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "64D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.glofas.parts]]
-filename_or_obj = 'ewds://cems-glofas-historical'
-engine = 'earlywarningdatastore'
-system_version = 'version_5_0'
-hydrological_model = 'lisflood'
-product_type = 'consolidated'
-timespan = 'time_mean'
-variable = 'average_river_discharge_in_the_last_24_hours'
+filename_or_obj = "ewds://cems-glofas-historical"
+engine = "earlywarningdatastore"
+system_version = "version_5_0"
+hydrological_model = "lisflood"
+product_type = "consolidated"
+timespan = "time_mean"
+variable = "average_river_discharge_in_the_last_24_hours"
 chunks = {time = 1, latitude = -1, longitude = -1}
 
 [[datasets.glofas.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = true, nan_threshold = 0.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glofas.postprocess]]
-name = 'astype'
-casting = 'same_kind'
-dtype = 'float32'
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
 
 [[datasets.glofas.postprocess]]
-name = 'rename'
-name_dict = {avg_dis = 'dis24'}
+name = "rename"
+name_dict = {avg_dis = "dis24"}
 
 [[datasets.glofas.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.glofas.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.glofas.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 # NOTE: The static data should be updated to GloFAS v5.0 as soon as possible.
 [[datasets.glofas_static.parts]]
-filename_or_obj = 'https://confluence.ecmwf.int/download/attachments/242067380/uparea_glofas_v4_0.nc'
-engine = 'netcdfoverhttp'
+filename_or_obj = "https://confluence.ecmwf.int/download/attachments/242067380/uparea_glofas_v4_0.nc"
+engine = "netcdfoverhttp"
 chunks = {latitude = -1, longitude = -1}
 
 [[datasets.glofas_static.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = true, nan_threshold = 0.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glofas_static.postprocess]]
-name = 'astype'
-uparea = {dtype = 'float32', casting='same_kind'}
+name = "astype"
+uparea = {dtype = "float32", casting="same_kind"}
 
 [[datasets.glofas_static.postprocess]]
-name = 'get_notnull_mask'
-variable = 'uparea'
-mask_name = 'glofas_mask'
+name = "get_notnull_mask"
+variable = "uparea"
+mask_name = "glofas_mask"
 
 [[datasets.glofas_static.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.glofas_static.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon']
+name = "drop_var_attrs"
+variables = ["lat", "lon"]
 
 [[datasets.glofas_static.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 # ==== GLORYS SECTION (Analysis and Forecast) ====
 
 [datasets.glorys.checkpointing]
-step = '4D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "4D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['mlotst', 'zos']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["mlotst", "zos"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['so']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["so"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['thetao']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["thetao"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy-cur_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['uo', 'vo']
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_phy-cur_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["uo", "vo"]
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.postprocess]]
-name = 'sel'
+name = "sel"
 latitude = {start = -76.9167, stop = 89.9167}
 
 [[datasets.glorys.postprocess]]
-name = 'isel'
+name = "isel"
 depth = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]
 
 [[datasets.glorys.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys.postprocess]]
-name = 'astype'
-casting = 'same_kind'
-dtype = 'float32'
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
 
 [[datasets.glorys.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
-set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon", depth = "level"}
+set_new_coordinate = {"level" = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 
 [[datasets.glorys.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.glorys.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 [datasets.glorys_bottom.checkpointing]
-step = '4D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "4D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.glorys_bottom.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_my_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['so', 'thetao']
-dataset_version = '202311'
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["so", "thetao"]
+dataset_version = "202311"
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'sel'
+name = "sel"
 latitude = {start = -76.9167, stop = 89.9167}
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'get_bottom'
-depth_dim = 'depth'
+name = "get_bottom"
+depth_dim = "depth"
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 1, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'astype'
-dtype = 'float32'
-casting = 'same_kind'
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'rename'
-name_dict = {so = 'so_bottom', thetao = 'thetao_bottom'}
+name = "rename"
+name_dict = {so = "so_bottom", thetao = "thetao_bottom"}
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.glorys_bottom.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 [datasets.glorys_seaice.checkpointing]
-step = '128D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "128D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.glorys_seaice.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m'
-engine = 'copernicusmarine'
-variables = ['sithick', 'siconc', 'usi', 'vsi']
-dataset_version = '202406'
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["sithick", "siconc", "usi", "vsi"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys_seaice.postprocess]]
-name = 'sel'
+name = "sel"
 latitude = {start = -76.9167, stop = 89.9167}
 
 [[datasets.glorys_seaice.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys_seaice.postprocess]]
-name = 'astype'
-casting = 'same_kind'
-dtype = 'float32'
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
 
 [[datasets.glorys_seaice.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.glorys_seaice.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.glorys_seaice.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 [[datasets.glorys_static.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_phy_anfc_0.083deg_static'
-engine = 'copernicusmarine'
-variables = ['deptho', 'depth']
-dataset_part = 'bathy'
-service = 'static-arco'
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["deptho", "depth"]
+dataset_part = "bathy"
+service = "static-arco"
 chunks = {depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys_static.postprocess]]
-name = 'sel'
+name = "sel"
 latitude = {start = -76.9167, stop = 89.9167}
 
 [[datasets.glorys_static.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = false, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys_static.postprocess]]
-name = 'astype'
-dtype = 'float32'
-casting = 'same_kind'
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
 
 [[datasets.glorys_static.postprocess]]
-name = 'rename'
-name_dict = {deptho = 'glorys_deptho'}
+name = "rename"
+name_dict = {deptho = "glorys_deptho"}
 
 [[datasets.glorys_static.postprocess]]
-name = 'get_sea_mask'
-bathymetry = 'glorys_deptho'
-depth_coordinate = 'depth'
-depth_dim = 'depth'
-mask_name = 'glorys_mask'
+name = "get_sea_mask"
+bathymetry = "glorys_deptho"
+depth_coordinate = "depth"
+depth_dim = "depth"
+mask_name = "glorys_mask"
 
 [[datasets.glorys_static.postprocess]]
-name = 'isel'
+name = "isel"
 depth = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]
 
 [[datasets.glorys_static.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon', depth = 'level'}
-set_new_coordinate = {'level' = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon", depth = "level"}
+set_new_coordinate = {"level" = [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]}
 
 [[datasets.glorys_static.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'depth', 'level']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "depth", "level"]
 
 [[datasets.glorys_static.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 # ==== WAVERYS SECTION ====
 
 [datasets.waverys.checkpointing]
-step = '64D'
-compressor = {cname = 'lz4', clevel = 3}
+step = "64D"
+compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.waverys.parts]]
-filename_or_obj = 'cm://cmems_mod_glo_wav_anfc_0.083deg_PT3H-i'
-engine = 'copernicusmarine'
-variables = ['VHM0', 'VTM10', 'VMDR', 'VSDX', 'VSDY']
-dataset_version = '202411'
-dataset_part = 'default'
-service = 'arco-geo-series'
+filename_or_obj = "cm://cmems_mod_glo_wav_anfc_0.083deg_PT3H-i"
+engine = "copernicusmarine"
+variables = ["VHM0", "VTM10", "VMDR", "VSDX", "VSDY"]
+dataset_version = "202411"
+dataset_part = "default"
+service = "arco-geo-series"
 chunks = {time = 8, latitude = -1, longitude = -1}
 
 [[datasets.waverys.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 24, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.waverys.postprocess]]
-name = 'resample'
-time = '1 D'
-label = 'left'
-closed = 'left'
-reduce = 'mean'
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "mean"
 
 [[datasets.waverys.postprocess]]
-name = 'astype'
-casting = 'same_kind'
-dtype = 'float32'
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
 
 [[datasets.waverys.postprocess]]
-name = 'rename'
-name_dict = {VHM0 = 'swh', VTM10 = 'mwp', VSDX = 'usd', VSDY = 'vsd', VMDR = 'mwd'}
+name = "rename"
+name_dict = {VHM0 = "swh", VTM10 = "mwp", VSDX = "usd", VSDY = "vsd", VMDR = "mwd"}
 
 [[datasets.waverys.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.waverys.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon', 'time']
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
 
 [[datasets.waverys.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 [[datasets.waverys_static.parts]]
-filename_or_obj = 'cm://cmems_mod_wav_anfc_0.083deg_static'
-engine = 'copernicusmarine'
-dataset_version = '202311'
-variables = 'deptho'
-dataset_part = 'bathy'
-service = 'static-arco'
+filename_or_obj = "cm://cmems_mod_wav_anfc_0.083deg_static"
+engine = "copernicusmarine"
+dataset_version = "202311"
+variables = "deptho"
+dataset_part = "bathy"
+service = "static-arco"
 chunks = {latitude = -1, longitude = -1}
 
 [[datasets.waverys_static.postprocess]]
-name = 'regrid'
-method = 'conservative'
-latitude_dim = 'latitude'
-longitude_dim = 'longitude'
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
 kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.waverys_static.postprocess]]
-name = 'astype'
-dtype = 'float32'
-casting = 'same_kind'
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
 
 [[datasets.waverys_static.postprocess]]
-name = 'is_positive_mask'
-variable = 'deptho'
-mask_name = 'waverys_mask'
+name = "is_positive_mask"
+variable = "deptho"
+mask_name = "waverys_mask"
 
 [[datasets.waverys_static.postprocess]]
-name = 'rename'
-name_dict = {deptho = 'waverys_deptho'}
+name = "rename"
+name_dict = {deptho = "waverys_deptho"}
 
 [[datasets.waverys_static.postprocess]]
-name = 'rename_coordinates'
-name_dict = {latitude = 'lat', longitude = 'lon'}
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
 
 [[datasets.waverys_static.postprocess]]
-name = 'drop_var_attrs'
-variables = ['lat', 'lon']
+name = "drop_var_attrs"
+variables = ["lat", "lon"]
 
 [[datasets.waverys_static.postprocess]]
-name = 'drop_attrs'
+name = "drop_attrs"
 deep = false
 
 # ==== SAVING SECTION ====
 
 [[postprocess]]
-name = 'chunk'
+name = "chunk"
 time = 1
 level = -1
 lat = -1
 lon = -1
 
 [[postprocess]]
-name = 'transpose'
-dims = ['time', 'level', 'lat', 'lon']
+name = "transpose"
+dims = ["time", "level", "lat", "lon"]
 
 [[postprocess]]
-name = 'masked_fill'
-mask_name = 'glorys_mask'
-fill_value = {thetao = 'thetao_bottom', so = 'so_bottom'}
-variables = ['thetao', 'so']
+name = "masked_fill"
+mask_name = "glorys_mask"
+fill_value = {thetao = "thetao_bottom", so = "so_bottom"}
+variables = ["thetao", "so"]
 
 [[postprocess]]
-name = 'masked_fill'
-mask_name = 'glorys_mask'
+name = "masked_fill"
+mask_name = "glorys_mask"
 fill_value = 0.0
-variables = ['uo', 'vo', 'usi', 'vsi', 'sithick', 'siconc']
+variables = ["uo", "vo", "usi", "vsi", "sithick", "siconc"]
 
 [[postprocess]]
-name = 'masked_fill'
-mask_name = 'waverys_mask'
+name = "masked_fill"
+mask_name = "waverys_mask"
 fill_value = 0.0
-variables = ['swh', 'mwp', 'mwd', 'usd', 'vsd']
+variables = ["swh", "mwp", "mwd", "usd", "vsd"]
 
 [[postprocess]]
-name = 'assign_var_attrs'
+name = "assign_var_attrs"
 
 [postprocess.lat]
-standard_name = 'latitude'
-long_name = 'latitude'
-units = 'degrees_north'
-unit_long = 'Degrees North'
-axis = 'Y'
+standard_name = "latitude"
+long_name = "latitude"
+units = "degrees_north"
+unit_long = "Degrees North"
+axis = "Y"
 
 [postprocess.lon]
-standard_name = 'longitude'
-long_name = 'longitude'
-units = 'degrees_east'
-unit_long = 'Degrees East'
-axis = 'X'
+standard_name = "longitude"
+long_name = "longitude"
+units = "degrees_east"
+unit_long = "Degrees East"
+axis = "X"
 
 [postprocess.time]
-standard_name = 'time'
-long_name = 'time'
-axis = 'T'
+standard_name = "time"
+long_name = "time"
+axis = "T"
 
 [postprocess.depth]
 standard_name = "depth"
@@ -574,7 +576,7 @@ axis = "Z"
 comment = "Integer indices (0-9) mapping to original GLORYS12 model levels [0, 4, 8, 12, 16, 20, 24, 28, 32, 34]."
 
 [[postprocess]]
-name = 'assign_attrs'
+name = "assign_attrs"
 title = "ARCO-OCEAN: Analysis-Ready Cloud-Optimized Ocean Dataset"
 summary = "A cloud-optimized dataset of ocean physical properties, sea ice, wave dynamics, and atmospheric/hydrological forcing designed for training data-driven S2S ocean forecasting models."
 id = "https://doi.org/10.5281/zenodo.17751760"
@@ -606,21 +608,9 @@ featureType = "grid"
 [save]
 consolidated = true
 chunk = {time = 1, level = -1, lat = -1, lon = -1}
-compressor = {cname = 'lz4', clevel = 1}
+compressor = {cname = "lz4", clevel = 1}
 
 [save.encoding.time]
-units = 'days since 1970-01-01'
-calendar = 'standard'
-dtype = 'int32'
-
-[checks.valid_global_ecmwf_coordinates]
-latitude_dim = 'lat'
-longitude_dim = 'lon'
-
-[checks.valid_time_coordinate]
-freq = '1D'
-
-[checks.ensure_no_nans]
-glofas_mask = ['uparea', 'dis24']
-glorys_mask = ['mlotst', 'uo', 'usi', 'vo', 'vsi', 'sithick', 'siconc', 'so', 'so_bottom', 'thetao', 'thetao_bottom', 'zos', 'glorys_deptho']
-waverys_mask = ['swh', 'mwp', 'mwd', 'usd', 'vsd']
+units = "days since 1993-01-01"
+calendar = "standard"
+dtype = "int32"

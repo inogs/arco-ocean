@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# ==== UNPACK PARAMETERS ====
+time_dim = "time"
+
+# ==== READING CONFIGURATION ====
+[read]
+inline_array = false
+chunks = {time = "auto", level = -1, lat = -1, lon = -1}
+
+# ==== CHECKS CONFIGURATION ====
+[checks.valid_global_ecmwf_coordinates]
+latitude_dim = "lat"
+longitude_dim = "lon"
+
+[checks.valid_time_coordinate]
+freq = "1D"
+
+[checks.ensure_no_nans]
+glofas_mask = ["uparea", "dis24"]
+glorys_mask = ["mlotst", "uo", "usi", "vo", "vsi", "sithick", "siconc", "so", "so_bottom", "thetao", "thetao_bottom", "zos", "glorys_deptho"]
+waverys_mask = ["swh", "mwp", "mwd", "usd", "vsd"]
+
+# ==== SAVING CONFIGURATION ====
+[save]
+consolidated = true
+chunk = {level = -1, lat = -1, lon = -1}
+compressor = {cname = "lz4", clevel = 1}
+

@@ -1,19 +1,19 @@
 #! /usr/bin/env bash
 #SBATCH --partition=dcgp_usr_prod
-#SBATCH --nodes=2
-#SBATCH --ntasks-per-node=28
-#SBATCH --cpus-per-task=4
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=112
 #SBATCH --exclusive
 #SBATCH --time=120
 #SBATCH --gres=tmpfs:3T
 
 usage() {
     more <<EOF
-compute_stats.slurm
-    This script computes dataset statistics (mean, std, diff_std) from a Zarr dataset using arco-make.
+validate.slurm
+    This script validates a dataset using arco-make.
     It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
-    INPUT_DIR and writes each statistic to "OUTPUT_DIR/CONFIG_NAME_<stats>".
-    The script will look into "configs/stats" for a TOML recipe named CONFIG_NAME.
+    INPUT_DIR.
+    The script will look into "configs/validate" for a TOML recipe named CONFIG_NAME.
 
 SYNOPSIS
     usage: $0 --help
@@ -22,20 +22,17 @@ SYNOPSIS
 DESCRIPTION
     Options
         --input-dir                             Where to look for data (default to \$DATA_ROOT/data/dataset).
-        --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/stats).
-        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/stats).
+        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/validate).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
-        --overwrite                             Whether to overwrite destination (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
 }
 
 # Default options
-OVERWRITE=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -43,7 +40,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "input-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -54,10 +51,6 @@ while true; do
     case "$1" in
         (--input-dir)
             INPUT_DIR="${2}"
-            shift 2
-            ;;
-        (--output-dir)
-            OUTPUT_DIR="${2}"
             shift 2
             ;;
         (--log-dir)
@@ -79,10 +72,6 @@ while true; do
         (--bind)
             BINDS+=("${2}")
             shift 2
-            ;;
-        (--overwrite)
-            OVERWRITE=true
-            shift
             ;;
         (--log-level)
             LOG_LEVEL="$2"; shift 2
@@ -132,17 +121,10 @@ if [[ -z ${VENV} ]]; then
 fi
 
 # Build command line flags
-FLAGS="--scheduler-type=mpi \
-       --log-level=${LOG_LEVEL}"
+FLAGS="--log-level=${LOG_LEVEL}"
 
-if [[ ${OVERWRITE} == true ]]; then
-    FLAGS="${FLAGS} --overwrite"
-else
-    FLAGS="${FLAGS} --no-overwrite"
-fi
-
-# Determine config file and input/output paths using the remaining argument
-CONFIG_PATH="${PROJECT_ROOT}/configs/stats/${1}.toml"
+# Determine config file and input paths using the remaining argument
+CONFIG_PATH="${PROJECT_ROOT}/configs/validate/${1}.toml"
 
 # Set default INPUT_DIR
 if [[ -z ${INPUT_DIR} ]]; then
@@ -150,17 +132,9 @@ if [[ -z ${INPUT_DIR} ]]; then
 fi
 INPUT_PATH="${INPUT_DIR}/${1}"
 
-# Set default OUTPUT_DIR and ensure it exists
-if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${DATA_ROOT}/data/stats"
-fi
-if [[ ! -d "${OUTPUT_DIR}" ]]; then
-    mkdir -p "${OUTPUT_DIR}"
-fi
-
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
-    LOG_DIR="${PROJECT_ROOT}/logs/stats"
+    LOG_DIR="${PROJECT_ROOT}/logs/validate"
 fi
 if [[ ! -d "${LOG_DIR}" ]]; then
     mkdir -p "${LOG_DIR}"
@@ -213,23 +187,19 @@ else
     RUN_CMD=(apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}")
 fi
 
-ALL_STATS=(mean std diff_std)
-for STATS in "${ALL_STATS[@]}"; do
-    OUTPUT_PATH="${OUTPUT_DIR}/${1}_${STATS}"
-    srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-      "${RUN_CMD[@]}" compute-stats ${FLAGS} -- "${CONFIG_PATH}" "${STATS}" "${INPUT_PATH}" "${OUTPUT_PATH}"
+srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
+  "${RUN_CMD[@]}" validate ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}"
 
-    STATS_EXIT_CODE=$?
+VALIDATE_EXIT_CODE=$?
 
-    if [[ ${STATS_EXIT_CODE} -eq 0 ]]; then
-        echo "----------------------------------------"
-        echo "Stats ${STATS} computed successfully."
-    else
-        echo "----------------------------------------"
-        echo "Stats ${STATS} computation failed with exit code: ${STATS_EXIT_CODE}"
-        exit ${STATS_EXIT_CODE}
-    fi
-done
+if [[ ${VALIDATE_EXIT_CODE} -eq 0 ]]; then
+    echo "----------------------------------------"
+    echo "Dataset validated successfully."
+else
+    echo "----------------------------------------"
+    echo "Dataset validation failed with exit code: ${VALIDATE_EXIT_CODE}"
+    exit ${VALIDATE_EXIT_CODE}
+fi
 
 # Deactivate all environments
 unload_modules

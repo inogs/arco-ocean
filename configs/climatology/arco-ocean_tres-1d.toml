@@ -1,0 +1,125 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# ==== CLIMATOLOGY PARAMETERS ====
+time_dim = "time"
+period = 365
+climatology_bin_dim = "dayofyear"
+window = 29
+weighting = "gaussian"
+weighting_scale = 7
+
+# ==== READING CONFIGURATION ====
+[read]
+inline_array = false
+chunks = {time = "auto", level = -1, lat = -1, lon = -1}
+
+# ==== PREPROCESSING PIPELINES ====
+[[preprocess]]
+name = "sel"
+time = {start = "1993-01-01", end = "2020-12-31"}
+
+[[preprocess]]
+name = "drop_static_vars"
+time_dim = "time"
+
+# See: https://github.com/pydata/xarray/issues/1844#issuecomment-417855365
+[[preprocess]]
+name = "convert_calendar"
+calendar = "365_day"
+
+# ==== POSTPROCESSING PIPELINES ====
+# Applied to the computed climatological mean dataset
+[[climatology.postprocess]]
+name = "assign_var_attrs"
+
+[climatology.postprocess.dayofyear]
+standard_name = "time"
+long_name = "climatological time"
+axis = "T"
+
+[[climatology.postprocess]]
+name = "assign_attrs"
+title = "ARCO-OCEAN Daily Climatology (1993 - 2020)"
+summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2020 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
+id = "https://doi.org/10.5281/zenodo.17751760"
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Derived from ARCO-OCEAN v1.0 (DOI: 10.5281/zenodo.17751760)"
+history = "Interpolated from native grids to global 0.25 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format. Multi-year daily mean calculated across 1993–2020 using gaussian smoothing."
+license = "CC-BY-4.0"
+attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
+references = "https://github.com/inogs/arco-ocean"
+geospatial_lat_min = -90.0
+geospatial_lat_max = 90.0
+geospatial_lat_units = "degrees_north"
+geospatial_lat_resolution = "0.25 degree"
+geospatial_lon_min = -180.0
+geospatial_lon_max = 180.0
+geospatial_lon_units = "degrees_east"
+geospatial_lon_resolution = "0.25 degree"
+geospatial_vertical_min = 0.494
+geospatial_vertical_max = 902.339
+geospatial_vertical_units = "m"
+geospatial_vertical_positive = "down"
+time_coverage_start = "1993-01-01T00:00:00Z"
+time_coverage_end = "2021-06-30T00:00:00Z"
+time_coverage_resolution = "P1D"
+climatology_base_period = "1993 - 2020"
+featureType = "grid"
+
+# Applied to the computed anomaly standard deviation dataset
+[[anomaly_std.postprocess]]
+name = "assign_var_attrs"
+
+[anomaly_std.postprocess.dayofyear]
+standard_name = "time"
+long_name = "climatological time"
+axis = "T"
+
+[[anomaly_std.postprocess]]
+name = "assign_attrs"
+title = "ARCO-OCEAN Daily Anomaly Standard Deviations (1993 - 2020)"
+summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2020 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
+id = "https://doi.org/10.5281/zenodo.17751760"
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Derived from ARCO-OCEAN v1.0 (DOI: 10.5281/zenodo.17751760)"
+history = "Interpolated from native grids to global 0.25 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format. Multi-year daily anomaly standard deviations calculated across 1993–2020 using gaussian smoothing."
+license = "CC-BY-4.0"
+attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
+references = "https://github.com/inogs/arco-ocean"
+geospatial_lat_min = -90.0
+geospatial_lat_max = 90.0
+geospatial_lat_units = "degrees_north"
+geospatial_lat_resolution = "0.25 degree"
+geospatial_lon_min = -180.0
+geospatial_lon_max = 180.0
+geospatial_lon_units = "degrees_east"
+geospatial_lon_resolution = "0.25 degree"
+geospatial_vertical_min = 0.494
+geospatial_vertical_max = 902.339
+geospatial_vertical_units = "m"
+geospatial_vertical_positive = "down"
+time_coverage_start = "1993-01-01T00:00:00Z"
+time_coverage_end = "2020-12-31T00:00:00Z"
+time_coverage_resolution = "P1D"
+climatology_base_period = "1993 - 2020"
+featureType = "grid"
+
+# ==== SAVING CONFIGURATION ====
+[save]
+consolidated = true
+chunk = {dayofyear = 1, level = -1, lat = -1, lon = -1}
+compressor = {cname = "lz4", clevel = 1}
+
+# ==== CHECKS CONFIGURATION ====
+#[checks.valid_global_ecmwf_coordinates]
+#latitude_dim = "lat"
+#longitude_dim = "lon"
+#
+#[checks.ensure_no_nans]
+#glofas_mask = ["uparea", "dis24"]
+#glorys_mask = ["mlotst", "uo", "usi", "vo", "vsi", "sithick", "siconc", "so", "so_bottom", "thetao", "thetao_bottom", "zos", "glorys_deptho"]
+#waverys_mask = ["swh", "mwp", "mwd", "usd", "vsd"]

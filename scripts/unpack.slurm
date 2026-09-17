@@ -8,21 +8,21 @@
 usage() {
     more <<EOF
 unpack_dataset.slurm
-    This script unpack a dataset stored as a collection of zipped Zarrs.
+    This script unpack a dataset stored as a collection of zipped Zarrs using arco-make.
+    It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
+    INPUT_DIR and writes the unzipped dataset to "OUTPUT_DIR/CONFIG_NAME".
+    The script will look into "configs/unpack" for a TOML recipe named CONFIG_NAME.
 
 SYNOPSIS
     usage: $0 --help
-    usage: $0 [options] dataset_name
+    usage: $0 [options] CONFIG_NAME
 
 DESCRIPTION
-    Positional arguments
-        dataset_name                            Name of the input dataset
-
     Options
         --start                                 Overwrite config start date.
         --end                                   Overwrite config end date.
-        --input-dir                             Where to look for data (defaut to $DATA_ROOT/data/archive).
-        --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/dataset).
+        --input-dir                             Where to look for data (default to \$DATA_ROOT/data/archive).
+        --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/dataset).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/unpack).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
@@ -35,10 +35,7 @@ EOF
 }
 
 # Default options
-START_DATE=1993-01-01
-END_DATE=2021-07-01
 OVERWRITE=false
-TIME_DIM="time"
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -46,7 +43,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,time-dim:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -92,21 +89,18 @@ while true; do
             shift 2
             ;;
         (--overwrite)
-            OVERWRITE=true;
+            OVERWRITE=true
             shift
-            ;;
-        (--time-dim)
-            TIME_DIM="$2"; shift 2
             ;;
         (--log-level)
             LOG_LEVEL="$2"; shift 2
             ;;
         (--help)
-            usage;
+            usage
             exit 0
             ;;
         (--)
-            shift;
+            shift
             break
             ;;
         (*)
@@ -117,9 +111,9 @@ while true; do
     esac
 done
 
-# Remaining args: input_path and output_path
+# Remaining args: config name
 if [[ $# -lt 1 ]]; then
-    echo "Error: missing required argument dataset name" >&2
+    echo "Error: missing required argument config name" >&2
     usage
     exit 1
 fi
@@ -146,10 +140,8 @@ if [[ -z ${VENV} ]]; then
 fi
 
 # Build command line flags
-FLAGS="--time-dim=${TIME_DIM} \
-       --log-level=${LOG_LEVEL} \
-       --scheduler-type=mpi \
-       --chunks=time:auto,level:-1,lat:-1,lon:-1"
+FLAGS="--scheduler-type=mpi \
+       --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
@@ -164,6 +156,9 @@ fi
 if [[ -n ${END_DATE} ]]; then
     FLAGS="${FLAGS} --end=${END_DATE}"
 fi
+
+# Determine config file and input/output paths using the remaining argument
+CONFIG_PATH="${PROJECT_ROOT}/configs/unpack/${1}.toml"
 
 # Set default INPUT_PATH
 if [[ -z ${INPUT_DIR} ]]; then
@@ -231,7 +226,7 @@ export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
 
 # Build the run command: either a local virtual environment or an Apptainer image
 if [[ -n ${VENV} ]]; then
-    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run arco-make)
+    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --no-sync arco-make)
 else
     APPTAINER_FLAGS=()
     for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
@@ -241,7 +236,7 @@ else
 fi
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  "${RUN_CMD[@]}" unpack ${FLAGS} -- "${INPUT_PATH}" "${OUTPUT_PATH}"
+  "${RUN_CMD[@]}" unpack ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${OUTPUT_PATH}"
 
 UNPACK_EXIT_CODE=$?
 
