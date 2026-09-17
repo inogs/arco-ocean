@@ -135,7 +135,7 @@ if [[ -z ${VENV} ]]; then
 fi
 
 # Build command line flags
-FLAGS="--no-progress --log-level=${LOG_LEVEL} --no-raise"
+FLAGS="--no-progress --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
