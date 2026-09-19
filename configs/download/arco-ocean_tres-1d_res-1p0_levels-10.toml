@@ -590,7 +590,7 @@ featureType = "grid"
 
 [save]
 consolidated = true
-chunk = {time = 1, level = -1, lat = -1, lon = -1}
+chunks = {time = 1, level = -1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}
 
 [save.encoding.time]

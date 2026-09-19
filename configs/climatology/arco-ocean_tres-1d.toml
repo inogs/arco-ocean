@@ -3,20 +3,20 @@
 # ==== CLIMATOLOGY PARAMETERS ====
 time_dim = "time"
 period = 365
-climatology_bin_dim = "dayofyear"
 window = 29
 weighting = "gaussian"
 weighting_scale = 7
 
 # ==== READING CONFIGURATION ====
 [read]
+engine = "zarr"
 inline_array = false
 chunks = {time = "auto", level = -1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
 [[preprocess]]
 name = "sel"
-time = {start = "1993-01-01", end = "2020-12-31"}
+time = {start = "1993-01-01", stop = "2020-12-31"}
 
 [[preprocess]]
 name = "drop_static_vars"
@@ -32,7 +32,7 @@ calendar = "365_day"
 [[postprocess_climatology]]
 name = "assign_var_attrs"
 
-[postprocess_climatology.dayofyear]
+[postprocess_climatology.time]
 standard_name = "time"
 long_name = "climatological time"
 axis = "T"
@@ -63,16 +63,23 @@ geospatial_vertical_max = 902.339
 geospatial_vertical_units = "m"
 geospatial_vertical_positive = "down"
 time_coverage_start = "1993-01-01T00:00:00Z"
-time_coverage_end = "2021-06-30T00:00:00Z"
+time_coverage_end = "2020-12-31T00:00:00Z"
 time_coverage_resolution = "P1D"
 climatology_base_period = "1993 - 2020"
 featureType = "grid"
+
+[[postprocess_climatology]]
+name = "chunk"
+time = 1
+level = -1
+lat = -1
+lon = -1
 
 # Applied to the computed anomaly standard deviation dataset
 [[postprocess_anomaly_std]]
 name = "assign_var_attrs"
 
-[postprocess_anomaly_std.dayofyear]
+[postprocess_anomaly_std.time]
 standard_name = "time"
 long_name = "climatological time"
 axis = "T"
@@ -108,8 +115,15 @@ time_coverage_resolution = "P1D"
 climatology_base_period = "1993 - 2020"
 featureType = "grid"
 
+[[postprocess_anomaly_std]]
+name = "chunk"
+time = 1
+level = -1
+lat = -1
+lon = -1
+
 # ==== SAVING CONFIGURATION ====
 [save]
 consolidated = true
-chunk = {dayofyear = 1, level = -1, lat = -1, lon = -1}
+chunk = {time = 1, level = -1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}

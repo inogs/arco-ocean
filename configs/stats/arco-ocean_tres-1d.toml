@@ -12,7 +12,7 @@ chunks = {time = "auto", level = -1, lat = -1, lon = -1}
 # ==== PREPROCESSING PIPELINES ====
 [[preprocess]]
 name = "sel"
-time = {start = "1993-01-01", end = "2020-12-31"}
+time = {start = "1993-01-01", stop = "2020-12-31"}
 
 [[preprocess]]
 name = "drop_static_vars"
