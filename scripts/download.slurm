@@ -10,10 +10,9 @@
 usage() {
     more <<EOF
 download_dataset.slurm
-    This script downloads datasets using arco-make. It requires Apptainer to be installed.
-    If the dataset is static (e.g. bathymetry), it will download the entire dataset at once.
+    This script downloads datasets using arco-make.
     If the dataset is a timeseries, it will download a range of dates computed from SLURM_ARRAY_TASK_ID.
-    The script will look into "configs/download" for a TOML recipe named CONFIG_NAME,
+    The script will look into CONFIG_DIR for a TOML recipe named CONFIG_NAME,
     and the output path will computed as "OUTPUT_DIR/CONFIG_NAME".
 
 SYNOPSIS
@@ -22,10 +21,12 @@ SYNOPSIS
 
 DESCRIPTION
     Options
-        --no-array                              Whether to download dataset in a single SLURM job (default false).
+        --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/download).
+        --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/datasets).
+        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/download).
+        --no-array                              Whether to download dataset in a single shot, without using SLURM arrays (default false).
         --start                                 Overwrite config start date.
         --end                                   Overwrite config end date.
-        --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/dataset).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
@@ -50,7 +51,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "no-array,start:,end:,output-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "config-dir:,output-dir:,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -58,6 +59,18 @@ fi
 eval "set -- ${ARGS}"
 while true; do
     case "${1}" in
+        (--config-dir)
+            CONFIG_DIR="${2}"
+            shift 2
+            ;;
+        (--output-dir)
+            OUTPUT_DIR="${2}"
+            shift 2
+            ;;
+        (--log-dir)
+            LOG_DIR="${2}"
+            shift 2
+            ;;
         (--no-array)
             ARRAY=false
             shift
@@ -68,10 +81,6 @@ while true; do
             ;;
         (--end)
             END_DATE="${2}"
-            shift 2
-            ;;
-        (--output-dir)
-            OUTPUT_DIR="${2}"
             shift 2
             ;;
         (--image)
@@ -159,23 +168,32 @@ if [[ -n ${END_DATE} ]]; then
     FLAGS="${FLAGS} --end=${END_DATE}"
 fi
 
-# Determine config file and output paths using the remaining argument
-CONFIG_PATH="${PROJECT_ROOT}/configs/download/${1}.toml"
+# Determine config file and input/output paths using the remaining argument
+if [[ -z ${CONFIG_DIR} ]]; then
+    CONFIG_DIR="${PROJECT_ROOT}/configs/download"
+fi
+CONFIG_PATH="${CONFIG_DIR}/${1}.toml"
 
 # Set OUTPUT_PATH and ensure parent exists
 if [[ -z ${OUTPUT_DIR} ]]; then
     OUTPUT_DIR="${DATA_ROOT}/data/archive/${1}"
 fi
-
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"
 fi
-
 OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.zip"
+
+# Set default LOG_DIR and ensure it exists
+if [[ -z ${LOG_DIR} ]]; then
+    LOG_DIR="${PROJECT_ROOT}/logs/download"
+fi
+if [[ ! -d "${LOG_DIR}" ]]; then
+    mkdir -p "${LOG_DIR}"
+fi
 
 # Build the run command: either a local virtual environment or an Apptainer image
 if [[ -n ${VENV} ]]; then
-    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run arco-make)
+    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --no-sync arco-make)
 else
     APPTAINER_FLAGS=()
     for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
@@ -185,7 +203,6 @@ else
 fi
 
 # Run arco-make
-export PYTHONWARNINGS='ignore::RuntimeWarning'
 "${RUN_CMD[@]}" download ${FLAGS} -- "${CONFIG_PATH}" "${OUTPUT_PATH}"
 
 DOWNLOAD_EXIT_CODE=$?

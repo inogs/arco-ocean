@@ -9,21 +9,22 @@
 
 usage() {
     more <<EOF
-compute_stats.slurm
-    This script computes dataset statistics (mean, std, diff_std) from a Zarr dataset using arco-make.
-    It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
-    INPUT_DIR and writes each statistic to "OUTPUT_DIR/CONFIG_NAME_<stats>".
-    The script will look into "configs/stats" for a TOML recipe named CONFIG_NAME.
+process.slurm
+    This script process a Zarr dataset using arco-make.
+    The script reads the input dataset named CONFIG_NAME from
+    INPUT_DIR and writes the result to "OUTPUT_DIR/OUTPUT_NAME".
+    The script will look into CONFIG_DIR for a TOML recipe named CONFIG_NAME.
 
 SYNOPSIS
     usage: $0 --help
-    usage: $0 [options] CONFIG_NAME
+    usage: $0 [options] CONFIG_NAME OUTPUT_NAME
 
 DESCRIPTION
     Options
-        --input-dir                             Where to look for data (default to \$DATA_ROOT/data/dataset).
-        --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/stats).
-        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/stats).
+        --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/process).
+        --input-dir                             Where to look for data (default to \$DATA_ROOT/data/datasets).
+        --output-dir                            Where to place the outputs (default to \$DATA_ROOT/data/datasets).
+        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/process).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
@@ -43,7 +44,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -52,6 +53,10 @@ fi
 eval "set -- ${ARGS}"
 while true; do
     case "$1" in
+        (--config-dir)
+            CONFIG_DIR="${2}"
+            shift 2
+            ;;
         (--input-dir)
             INPUT_DIR="${2}"
             shift 2
@@ -103,8 +108,8 @@ while true; do
     esac
 done
 
-# Remaining args: config name
-if [[ $# -lt 1 ]]; then
+# Remaining args: config name and output name
+if [[ $# -lt 2 ]]; then
     echo "Error: missing required argument config name" >&2
     usage
     exit 1
@@ -141,18 +146,22 @@ else
     FLAGS="${FLAGS} --no-overwrite"
 fi
 
+
 # Determine config file and input/output paths using the remaining argument
-CONFIG_PATH="${PROJECT_ROOT}/configs/stats/${1}.toml"
+if [[ -z ${CONFIG_DIR} ]]; then
+    CONFIG_DIR="${PROJECT_ROOT}/configs/process"
+fi
+CONFIG_PATH="${CONFIG_DIR}/${1}.toml"
 
 # Set default INPUT_DIR
 if [[ -z ${INPUT_DIR} ]]; then
-    INPUT_DIR="${DATA_ROOT}/data/dataset"
+    INPUT_DIR="${DATA_ROOT}/data/datasets"
 fi
 INPUT_PATH="${INPUT_DIR}/${1}"
 
 # Set default OUTPUT_DIR and ensure it exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${DATA_ROOT}/data/stats"
+    OUTPUT_DIR="${DATA_ROOT}/data/datasets"
 fi
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"
@@ -160,7 +169,7 @@ fi
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
-    LOG_DIR="${PROJECT_ROOT}/logs/stats"
+    LOG_DIR="${PROJECT_ROOT}/logs/process"
 fi
 if [[ ! -d "${LOG_DIR}" ]]; then
     mkdir -p "${LOG_DIR}"
@@ -213,23 +222,20 @@ else
     RUN_CMD=(apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}")
 fi
 
-ALL_STATS=(mean std diff_std)
-for STATS in "${ALL_STATS[@]}"; do
-    OUTPUT_PATH="${OUTPUT_DIR}/${1}_${STATS}"
-    srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-      "${RUN_CMD[@]}" compute-stats ${FLAGS} -- "${CONFIG_PATH}" "${STATS}" "${INPUT_PATH}" "${OUTPUT_PATH}"
+OUTPUT_PATH="${OUTPUT_DIR}/${2}"
+srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
+  "${RUN_CMD[@]}" process ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${OUTPUT_PATH}"
 
-    STATS_EXIT_CODE=$?
+PROCESS_EXIT_CODE=$?
 
-    if [[ ${STATS_EXIT_CODE} -eq 0 ]]; then
-        echo "----------------------------------------"
-        echo "Stats ${STATS} computed successfully."
-    else
-        echo "----------------------------------------"
-        echo "Stats ${STATS} computation failed with exit code: ${STATS_EXIT_CODE}"
-        exit ${STATS_EXIT_CODE}
-    fi
-done
+if [[ ${PROCESS_EXIT_CODE} -eq 0 ]]; then
+    echo "----------------------------------------"
+    echo "Processed successfully."
+else
+    echo "----------------------------------------"
+    echo "Process failed with exit code: ${PROCESS_EXIT_CODE}"
+    exit ${PROCESS_EXIT_CODE}
+fi
 
 # Deactivate all environments
 unload_modules

@@ -18,10 +18,10 @@
 usage() {
     more <<EOF
 compute_climatology.slurm
-    This script computes the daily climatology from a Zarr dataset using arco-make.
-    It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
-    INPUT_DIR and writes the climatology to "OUTPUT_DIR/CONFIG_NAME_climatology".
-    The script will look into "configs/climatology" for a TOML recipe named CONFIG_NAME.
+    This script computes the climatology and the anomaly standard deviation from a Zarr dataset using arco-make.
+    The script reads the input dataset named CONFIG_NAME from INPUT_DIR and writes the climatology and the anomaly
+    standard deviation respectively to "OUTPUT_DIR/CONFIG_NAME_climatology" and "OUTPUT_DIR/CONFIG_NAME_anomaly_std".
+    The script will look into CONFIG_DIR for a TOML recipe named CONFIG_NAME.
 
 SYNOPSIS
     usage: $0 --help
@@ -29,9 +29,10 @@ SYNOPSIS
 
 DESCRIPTION
     Options
-        --input-dir                             Where to look for data (default to \$DATA_ROOT/data/dataset).
-        --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/stats).
-        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/compute_climatology).
+        --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/climatology).
+        --input-dir                             Where to look for data (default to \$DATA_ROOT/data/datasets).
+        --output-dir                            Where to place the outputs (default to \$DATA_ROOT/data/datasets).
+        --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/climatology).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
@@ -53,7 +54,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,no-sync-step,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,no-sync-step,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -62,6 +63,10 @@ fi
 eval "set -- ${ARGS}"
 while true; do
     case "$1" in
+        (--config-dir)
+            CONFIG_DIR="${2}"
+            shift 2
+            ;;
         (--input-dir)
             INPUT_DIR="${2}"
             shift 2
@@ -162,17 +167,20 @@ else
 fi
 
 # Determine config file and input/output paths using the remaining argument
-CONFIG_PATH="${PROJECT_ROOT}/configs/climatology/${1}.toml"
+if [[ -z ${CONFIG_DIR} ]]; then
+    CONFIG_DIR="${PROJECT_ROOT}/configs/climatology"
+fi
+CONFIG_PATH="${CONFIG_DIR}/${1}.toml"
 
 # Set default INPUT_DIR
 if [[ -z ${INPUT_DIR} ]]; then
-    INPUT_DIR="${DATA_ROOT}/data/dataset"
+    INPUT_DIR="${DATA_ROOT}/data/datasets"
 fi
 INPUT_PATH="${INPUT_DIR}/${1}"
 
 # Set default OUTPUT_DIR and ensure it exists
 if [[ -z ${OUTPUT_DIR} ]]; then
-    OUTPUT_DIR="${DATA_ROOT}/data/stats"
+    OUTPUT_DIR="${DATA_ROOT}/data/datasets"
 fi
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"

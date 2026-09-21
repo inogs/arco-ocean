@@ -125,5 +125,5 @@ lon = -1
 # ==== SAVING CONFIGURATION ====
 [save]
 consolidated = true
-chunk = {time = 1, level = -1, lat = -1, lon = -1}
+chunks = {time = 1, level = -1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}
