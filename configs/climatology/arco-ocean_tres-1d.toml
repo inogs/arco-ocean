@@ -15,10 +15,6 @@ chunks = {time = "auto", level = -1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
 [[preprocess]]
-name = "sel"
-time = {start = "1993-01-01", stop = "2020-12-31"}
-
-[[preprocess]]
 name = "drop_static_vars"
 time_dim = "time"
 
@@ -39,14 +35,14 @@ axis = "T"
 
 [[postprocess_climatology]]
 name = "assign_attrs"
-title = "ARCO-OCEAN Daily Climatology (1993 - 2020)"
-summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2020 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
+title = "ARCO-OCEAN Daily Climatology (1993 - 2023)"
+summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2023 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
 id = "https://doi.org/10.5281/zenodo.17751760"
 Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
 creator_name = "OGS ARCO-OCEAN Development Team"
 source = "Derived from ARCO-OCEAN v1.0 (DOI: 10.5281/zenodo.17751760)"
-history = "Interpolated from native grids to global 0.25 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format. Multi-year daily mean calculated across 1993–2020 using gaussian smoothing."
+history = "Interpolated from native grids to global 0.25 deg regular grid and written to daily-chunked Zarr format. Multi-year daily mean calculated across 1993–2023 using gaussian smoothing."
 license = "CC-BY-4.0"
 attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
 references = "https://github.com/inogs/arco-ocean"
@@ -59,19 +55,19 @@ geospatial_lon_max = 180.0
 geospatial_lon_units = "degrees_east"
 geospatial_lon_resolution = "0.25 degree"
 geospatial_vertical_min = 0.494
-geospatial_vertical_max = 902.339
+geospatial_vertical_max = 5727.917
 geospatial_vertical_units = "m"
 geospatial_vertical_positive = "down"
 time_coverage_start = "1993-01-01T00:00:00Z"
-time_coverage_end = "2020-12-31T00:00:00Z"
+time_coverage_end = "2023-12-31T00:00:00Z"
 time_coverage_resolution = "P1D"
-climatology_base_period = "1993 - 2020"
+climatology_base_period = "1993 - 2023"
 featureType = "grid"
 
 [[postprocess_climatology]]
 name = "chunk"
 time = 1
-level = -1
+level = 1
 lat = -1
 lon = -1
 
@@ -86,14 +82,14 @@ axis = "T"
 
 [[postprocess_anomaly_std]]
 name = "assign_attrs"
-title = "ARCO-OCEAN Daily Anomaly Standard Deviations (1993 - 2020)"
-summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2020 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
+title = "ARCO-OCEAN Daily Anomaly Standard Deviations (1993 - 2023)"
+summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2023 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days)."
 id = "https://doi.org/10.5281/zenodo.17751760"
 Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
 creator_name = "OGS ARCO-OCEAN Development Team"
 source = "Derived from ARCO-OCEAN v1.0 (DOI: 10.5281/zenodo.17751760)"
-history = "Interpolated from native grids to global 0.25 deg regular grid, subsampled vertical levels to 10 layers (0-902m), and written to daily-chunked Zarr format. Multi-year daily anomaly standard deviations calculated across 1993–2020 using gaussian smoothing."
+history = "Interpolated from native grids to global 0.25 deg regular grid and written to daily-chunked Zarr format. Multi-year daily anomaly standard deviations calculated across 1993–2023 using gaussian smoothing."
 license = "CC-BY-4.0"
 attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
 references = "https://github.com/inogs/arco-ocean"
@@ -106,24 +102,24 @@ geospatial_lon_max = 180.0
 geospatial_lon_units = "degrees_east"
 geospatial_lon_resolution = "0.25 degree"
 geospatial_vertical_min = 0.494
-geospatial_vertical_max = 902.339
+geospatial_vertical_max = 5727.917
 geospatial_vertical_units = "m"
 geospatial_vertical_positive = "down"
 time_coverage_start = "1993-01-01T00:00:00Z"
-time_coverage_end = "2020-12-31T00:00:00Z"
+time_coverage_end = "2023-12-31T00:00:00Z"
 time_coverage_resolution = "P1D"
-climatology_base_period = "1993 - 2020"
+climatology_base_period = "1993 - 2023"
 featureType = "grid"
 
 [[postprocess_anomaly_std]]
 name = "chunk"
 time = 1
-level = -1
+depth = 1
 lat = -1
 lon = -1
 
 # ==== SAVING CONFIGURATION ====
 [save]
 consolidated = true
-chunks = {time = 1, level = -1, lat = -1, lon = -1}
+chunks = {time = 1, depth = 1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}
