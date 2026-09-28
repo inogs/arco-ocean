@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2026 Stefano Campanella
 # SPDX-License-Identifier: MIT
+# Note: Memory consumption is highly sensitive to the parts chunking.
+#   The following values are proven to work on 32 CPUs and about 110 GB of RAM and no checkpointint.
+#   The whole download takes a few days, be sure you have a profile that allows that in save storage_options.
 time_dim = "time"
 start = 1993-01-01T00:00:00
 end = 2024-01-01T00:00:00
-
-[datasets.era5.checkpointing]
 step = "128D"
-compressor = {cname = "lz4", clevel = 3}
 
 [[datasets.era5.parts]]
 filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
@@ -35,6 +35,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
+kwargs = {output_chunks = {time = 480, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.era5.postprocess]]
@@ -43,6 +44,12 @@ time = "1 D"
 label = "left"
 closed = "left"
 reduce = "mean"
+
+[[datasets.era5.postprocess]]
+name = "chunk"
+time = 512
+latitude = -1
+longitude = -1
 
 [[datasets.era5.postprocess]]
 name = "rename"
@@ -68,10 +75,6 @@ variables = ["lat", "lon", "time"]
 name = "drop_attrs"
 deep = false
 
-[datasets.era5_cumulative.checkpointing]
-step = "128D"
-compressor = {cname = "lz4", clevel = 3}
-
 [[datasets.era5_cumulative.parts]]
 filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
 engine = "zarr"
@@ -95,6 +98,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
+kwargs = {output_chunks = {time = 480, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.era5_cumulative.postprocess]]
@@ -107,6 +111,12 @@ time = "1 D"
 label = "left"
 closed = "left"
 reduce = "sum"
+
+[[datasets.era5_cumulative.postprocess]]
+name = "chunk"
+time = 512
+latitude = -1
+longitude = -1
 
 [[datasets.era5_cumulative.postprocess]]
 name = "rename"
@@ -130,10 +140,6 @@ deep = false
 
 # ==== GLOFAS SECTION ====
 
-[datasets.glofas.checkpointing]
-step = "64D"
-compressor = {cname = "lz4", clevel = 3}
-
 [[datasets.glofas.parts]]
 filename_or_obj = "ewds://cems-glofas-historical"
 engine = "earlywarningdatastore"
@@ -149,7 +155,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold = 0.0}
+kwargs = {skipna = true, nan_threshold = 0.0, output_chunks = {time=256, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glofas.postprocess]]
@@ -184,7 +190,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold = 0.0}
+kwargs = {skipna = true, nan_threshold = 0.0, output_chunks = {latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glofas_static.postprocess]]
@@ -210,18 +216,14 @@ deep = false
 
 # ==== GLORYS SECTION ====
 
-[datasets.glorys.checkpointing]
-step = "4D"
-compressor = {cname = "lz4", clevel = 3}
-
 [[datasets.glorys.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_P1D-m"
 engine = "copernicusmarine"
-variables = ["uo", "vo", "so", "thetao", "mlotst", "zos"]
+variables = ["uo", "vo", "so", "thetao", "zos"]
 dataset_version = "202311"
 dataset_part = "default"
 service = "arco-geo-series"
-chunks = {time = 1, depth = 1, latitude = -1, longitude = -1}
+chunks = {time = 2, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.postprocess]]
 name = "sel"
@@ -238,7 +240,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
+kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time=256, depth = 1, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys.postprocess]]
@@ -258,10 +260,6 @@ variables = ["depth", "lat", "lon", "time"]
 name = "drop_attrs"
 deep = false
 
-[datasets.glorys_seaice.checkpointing]
-step = "128D"
-compressor = {cname = "lz4", clevel = 3}
-
 [[datasets.glorys_seaice.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_P1D-m"
 engine = "copernicusmarine"
@@ -269,7 +267,7 @@ variables = ["sithick", "siconc", "usi", "vsi"]
 dataset_version = "202311"
 dataset_part = "default"
 service = "arco-geo-series"
-chunks = {time = 1, latitude = -1, longitude = -1}
+chunks = {time = 2, latitude = -1, longitude = -1}
 
 [[datasets.glorys_seaice.postprocess]]
 name = "sel"
@@ -280,7 +278,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
+kwargs = {skipna = false, output_chunks = {time = 256, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.glorys_seaice.postprocess]]
@@ -351,10 +349,6 @@ deep = false
 
 # ==== WAVERYS SECTION ====
 
-[datasets.waverys.checkpointing]
-step = "64D"
-compressor = {cname = "lz4", clevel = 3}
-
 [[datasets.waverys.parts]]
 filename_or_obj = "cm://cmems_mod_glo_wav_my_0.2deg_PT3H-i"
 engine = "copernicusmarine"
@@ -369,7 +363,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 24, latitude = -1, longitude = -1}}
+kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 256, latitude = -1, longitude = -1}}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.0, resolution_lat = 1.0, resolution_lon = 1.0}
 
 [[datasets.waverys.postprocess]]
@@ -378,6 +372,12 @@ time = "1 D"
 label = "left"
 closed = "left"
 reduce = "mean"
+
+[[datasets.waverys.postprocess]]
+name = "chunk"
+time = 256
+latitude = -1
+longitude = -1
 
 [[datasets.waverys.postprocess]]
 name = "astype"
@@ -447,7 +447,7 @@ deep = false
 
 [[postprocess]]
 name = "chunk"
-time = 1
+time = 512
 depth = 1
 lat = -1
 lon = -1
