@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Stefano Campanella
 # SPDX-License-Identifier: MIT
 # ==== UNPACK PARAMETERS ====
+glob = "/*.zarr"
 time_dim = "time"
 
 # ==== READING CONFIGURATION ====

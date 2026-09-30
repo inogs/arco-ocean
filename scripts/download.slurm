@@ -22,7 +22,8 @@ SYNOPSIS
 DESCRIPTION
     Options
         --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/download).
-        --output-dir                            Where to place the ouputs (default to $DATA_ROOT/data/datasets).
+        --output-dir                            Where to place the outputs (default to $DATA_ROOT/data/datasets).
+        --zip                                   If to use zipped Zarr directory store for the outputs.
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/download).
         --no-array                              Whether to download dataset in a single shot, without using SLURM arrays (default false).
         --start                                 Overwrite config start date.
@@ -42,6 +43,7 @@ ARCO_OCEAN_ARRAY_END=2024-01-01
 ARCO_OCEAN_ARRAY_STEP=256
 
 # Default options
+OUTPUT_EXTENSION="zarr"
 ARRAY=true
 OVERWRITE=false
 LOG_LEVEL="info"
@@ -51,7 +53,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "config-dir:,output-dir:,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "config-dir:,output-dir:,zip,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -66,6 +68,10 @@ while true; do
         (--output-dir)
             OUTPUT_DIR="${2}"
             shift 2
+            ;;
+        (--zip)
+            OUTPUT_EXTENSION="zip"
+            shift
             ;;
         (--log-dir)
             LOG_DIR="${2}"
@@ -181,7 +187,7 @@ fi
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"
 fi
-OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.zip"
+OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.${OUTPUT_EXTENSION}"
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
