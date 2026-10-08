@@ -21,6 +21,7 @@ SYNOPSIS
 
 DESCRIPTION
     Options
+        --project-dir                           Project root directory (default to current working directory).
         --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/download).
         --output-dir                            Where to place the outputs (default to $DATA_ROOT/data/datasets).
         --zip                                   If to use zipped Zarr directory store for the outputs.
@@ -38,11 +39,8 @@ DESCRIPTION
 EOF
 }
 
-ARCO_OCEAN_ARRAY_START=1993-01-01
-ARCO_OCEAN_ARRAY_END=2024-01-01
-ARCO_OCEAN_ARRAY_STEP=256
-
 # Default options
+PROJECT_ROOT=""
 OUTPUT_EXTENSION="zarr"
 ARRAY=true
 OVERWRITE=false
@@ -53,7 +51,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "config-dir:,output-dir:,zip,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,output-dir:,zip,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -61,6 +59,10 @@ fi
 eval "set -- ${ARGS}"
 while true; do
     case "${1}" in
+        (--project-dir)
+            PROJECT_ROOT="${2}"
+            shift 2
+            ;;
         (--config-dir)
             CONFIG_DIR="${2}"
             shift 2
@@ -129,7 +131,9 @@ while true; do
 done
 
 # Change current directory to project root
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+if [[ -z "${PROJECT_ROOT}" ]]; then
+    PROJECT_ROOT="$(pwd)"
+fi
 cd "${PROJECT_ROOT}" || exit 1
 
 # Set default path envs and module loading 
@@ -143,6 +147,14 @@ fi
 
 # Load default modules
 load_modules
+
+# Check that download array ARCO-OCEAN variables are defined
+for var in [ARCO_OCEAN_ARRAY_START ARCO_OCEAN_ARRAY_END ARCO_OCEAN_ARRAY_STEP]; do
+    if [[ -z "${!var}" ]]; then
+        echo "${!var} environment variable not defined or empty."
+        exit 1
+    fi
+done
 
 # Check that apptainer is installed (only when not running from a local virtual environment)
 if [[ -z ${VENV} ]]; then

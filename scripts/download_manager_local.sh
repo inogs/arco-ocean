@@ -19,7 +19,9 @@ shift 4 2>/dev/null || shift $#
 DOWNLOAD_ARGS=("${@}")
 
 # Change current directory to project root
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+if [[ -z "${PROJECT_ROOT}" ]]; then
+    PROJECT_ROOT="$(pwd)"
+fi
 cd "${PROJECT_ROOT}" || exit 1
 
 # Check arguments

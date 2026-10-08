@@ -21,6 +21,7 @@ SYNOPSIS
 
 DESCRIPTION
     Options
+        --project-dir                           Project root directory (default to current working directory).
         --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/process).
         --input-dir                             Where to look for data (default to \$DATA_ROOT/data/datasets).
         --output-dir                            Where to place the outputs (default to \$DATA_ROOT/data/datasets).
@@ -36,6 +37,7 @@ EOF
 }
 
 # Default options
+PROJECT_ROOT=""
 OVERWRITE=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
@@ -44,7 +46,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -53,6 +55,10 @@ fi
 eval "set -- ${ARGS}"
 while true; do
     case "$1" in
+        (--project-dir)
+            PROJECT_ROOT="${2}"
+            shift 2
+            ;;
         (--config-dir)
             CONFIG_DIR="${2}"
             shift 2
@@ -116,7 +122,9 @@ if [[ $# -lt 2 ]]; then
 fi
 
 # Change current directory to project root
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+if [[ -z "${PROJECT_ROOT}" ]]; then
+    PROJECT_ROOT="$(pwd)"
+fi
 cd "${PROJECT_ROOT}" || exit 1
 
 # Set default path envs and module loading

@@ -21,6 +21,7 @@ DESCRIPTION
         destination                             Destination path or remote target (optional if --destination is set).
 
     Options
+        --project-dir PATH                      Project root directory (default to current working directory).
         --source PATH                           Source directory to monitor (default to \$DATA_ROOT/data).
         --destination PATH                      Destination target for rsync (e.g., user@host:/path or /local/path).
         --identity-file FILE                    SSH identity file (private key) for rsync authentication.
@@ -37,6 +38,7 @@ EOF
 }
 
 # Default options
+PROJECT_ROOT=""
 SOURCE=""
 DESTINATION=""
 IDENTITY_FILE=""
@@ -50,7 +52,7 @@ LOG_FILE=""
 ENV_FILE="scripts/.env"
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "source:,destination:,identity-file:,interval:,rsync-options:,remove-source-files,dry-run,once,log-dir:,log-file:,env-file:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,source:,destination:,identity-file:,interval:,rsync-options:,remove-source-files,dry-run,once,log-dir:,log-file:,env-file:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -59,6 +61,10 @@ fi
 eval "set -- ${ARGS}"
 while true; do
     case "$1" in
+        (--project-dir)
+            PROJECT_ROOT="${2}"
+            shift 2
+            ;;
         (--source)
             SOURCE="${2}"
             shift 2
@@ -131,7 +137,6 @@ if [[ $# -ge 1 && -z "${DESTINATION}" ]]; then
 fi
 
 # Change current directory to project root
-PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [[ -z "${PROJECT_ROOT}" ]]; then
     PROJECT_ROOT="$(pwd)"
 fi

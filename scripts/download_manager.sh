@@ -33,7 +33,9 @@ WAIT_TIME=${6:-1800}
 LOG_DIR=$7
 
 # Change current directory to project root
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+if [[ -z "${PROJECT_ROOT}" ]]; then
+    PROJECT_ROOT="$(pwd)"
+fi
 cd "${PROJECT_ROOT}" || exit 1
 
 # Set default LOG_DIR and ensure it exists
