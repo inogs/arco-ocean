@@ -18,7 +18,7 @@
 usage() {
     more <<EOF
 compute_climatology.slurm
-    This script computes the climatology and the anomaly standard deviation from a Zarr dataset using arco-make.
+    This script computes the climatology and the anomaly standard deviation from a Zarr dataset using arco-make on CINECA Leonardo.
     The script reads the input dataset named CONFIG_NAME from INPUT_DIR and writes the climatology and the anomaly
     standard deviation respectively to "OUTPUT_DIR/CONFIG_NAME_climatology" and "OUTPUT_DIR/CONFIG_NAME_anomaly_std".
     The script will look into CONFIG_DIR for a TOML recipe named CONFIG_NAME.
@@ -151,7 +151,9 @@ if [[ -n ${ENV_FILE} ]]; then
 fi
 
 # Load default modules
-load_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module load "${MODULE_TO_LOAD}"
+done
 
 # Check that apptainer is installed (only when not running from a local virtual environment)
 if [[ -z ${VENV} ]]; then
@@ -248,7 +250,7 @@ export DASK_DISTRIBUTED__CLIENT__HEARTBEAT="10s"
 
 # Build the run command: either a local virtual environment or an Apptainer image
 if [[ -n ${VENV} ]]; then
-    RUN_CMD=(env UV_PROJECT_ENVIRONMENT="${VENV}" uv run --no-sync arco-make)
+    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --no-sync arco-make)
 else
     APPTAINER_FLAGS=()
     for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
@@ -272,4 +274,6 @@ else
 fi
 
 # Deactivate all environments
-unload_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module unload "${MODULE_TO_LOAD}"
+done

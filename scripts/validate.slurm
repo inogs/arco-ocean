@@ -10,7 +10,7 @@
 usage() {
     more <<EOF
 validate.slurm
-    This script validates a dataset using arco-make.
+    This script validates a dataset using arco-make on CINECA Leonardo.
     It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
     INPUT_DIR.
     The script will look into "configs/validate" for a TOML recipe named CONFIG_NAME.
@@ -22,6 +22,7 @@ SYNOPSIS
 DESCRIPTION
     Options
         --project-dir                           Project root directory (default to current working directory).
+        --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/validate).
         --input-dir                             Where to look for data (default to \$DATA_ROOT/data/dataset).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/validate).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
@@ -42,7 +43,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,input-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,input-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -53,6 +54,10 @@ while true; do
     case "$1" in
         (--project-dir)
             PROJECT_ROOT="${2}"
+            shift 2
+            ;;
+        (--config-dir)
+            CONFIG_DIR="${2}"
             shift 2
             ;;
         (--input-dir)
@@ -121,7 +126,9 @@ if [[ -n ${ENV_FILE} ]]; then
 fi
 
 # Load default modules
-load_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module load "${MODULE_TO_LOAD}"
+done
 
 # Check that apptainer is installed (only when not running from a local virtual environment)
 if [[ -z ${VENV} ]]; then
@@ -132,7 +139,10 @@ fi
 FLAGS="--log-level=${LOG_LEVEL}"
 
 # Determine config file and input paths using the remaining argument
-CONFIG_PATH="${PROJECT_ROOT}/configs/validate/${1}.toml"
+if [[ -z ${CONFIG_DIR} ]]; then
+    CONFIG_DIR="${PROJECT_ROOT}/configs/validate"
+fi
+CONFIG_PATH="${CONFIG_DIR}/${1}.toml"
 
 # Set default INPUT_DIR
 if [[ -z ${INPUT_DIR} ]]; then
@@ -210,4 +220,6 @@ else
 fi
 
 # Deactivate all environments
-unload_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module unload "${MODULE_TO_LOAD}"
+done

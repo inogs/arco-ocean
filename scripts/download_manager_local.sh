@@ -8,6 +8,7 @@
 # environment variable from START_INDEX to MAX_INDEX (included).
 #
 # Each task writes its own log file in LOG_DIR, named local_INDEX.log.
+# If a task fails, it is retried a configurable number of times (MAX_RETRIES, default: 3) before moving to the next task.
 # Failing tasks do not stop the loop: their indices are reported at the end.
 # Any additional argument is forwarded to scripts/download.slurm (e.g. --overwrite).
 
@@ -17,6 +18,8 @@ MAX_INDEX=${3:-44}
 LOG_DIR=$4
 shift 4 2>/dev/null || shift $#
 DOWNLOAD_ARGS=("${@}")
+MAX_RETRIES=${MAX_RETRIES:-${RETRIES:-3}}
+RETRY_DELAY=${RETRY_DELAY:-5}
 
 # Change current directory to project root
 if [[ -z "${PROJECT_ROOT}" ]]; then
@@ -44,7 +47,7 @@ mkdir -p "${LOG_DIR}"
 
 echo "============================================================"
 echo "Local download run started at: $(date)"
-echo "Config: ${CONFIG}, StartIndex: ${START_INDEX}, MaxIndex: ${MAX_INDEX}, PID: $$, Hostname: $(hostname)"
+echo "Config: ${CONFIG}, StartIndex: ${START_INDEX}, MaxIndex: ${MAX_INDEX}, MaxRetries: ${MAX_RETRIES}, PID: $$, Hostname: $(hostname)"
 echo "============================================================"
 
 FAILED_INDICES=()
@@ -58,14 +61,30 @@ for (( SLURM_ARRAY_TASK_ID=START_INDEX; SLURM_ARRAY_TASK_ID<=MAX_INDEX; SLURM_AR
         continue
     fi
 
-    echo "Task ${SLURM_ARRAY_TASK_ID}: running (log: ${TASK_LOG})..."
-    bash scripts/download.slurm "${DOWNLOAD_ARGS[@]+"${DOWNLOAD_ARGS[@]}"}" "${CONFIG}" > "${TASK_LOG}" 2>&1
-    TASK_EXIT_CODE=$?
+    TASK_SUCCESS=false
+    for (( attempt=0; attempt<=MAX_RETRIES; attempt++ )); do
+        if [[ ${attempt} -gt 0 ]]; then
+            echo "Task ${SLURM_ARRAY_TASK_ID}: retrying (${attempt}/${MAX_RETRIES}, log: ${TASK_LOG})..."
+        else
+            echo "Task ${SLURM_ARRAY_TASK_ID}: running (log: ${TASK_LOG})..."
+        fi
 
-    if [[ ${TASK_EXIT_CODE} -eq 0 ]]; then
-        echo "Task ${SLURM_ARRAY_TASK_ID}: finished successfully."
-    else
-        echo "Task ${SLURM_ARRAY_TASK_ID}: failed with exit code ${TASK_EXIT_CODE}."
+        bash scripts/download.slurm "${DOWNLOAD_ARGS[@]+"${DOWNLOAD_ARGS[@]}"}" "${CONFIG}" > "${TASK_LOG}" 2>&1
+        TASK_EXIT_CODE=$?
+
+        if [[ ${TASK_EXIT_CODE} -eq 0 ]]; then
+            echo "Task ${SLURM_ARRAY_TASK_ID}: finished successfully."
+            TASK_SUCCESS=true
+            break
+        else
+            echo "Task ${SLURM_ARRAY_TASK_ID}: failed with exit code ${TASK_EXIT_CODE}."
+            if [[ ${attempt} -lt ${MAX_RETRIES} && ${RETRY_DELAY} -gt 0 ]]; then
+                sleep "${RETRY_DELAY}"
+            fi
+        fi
+    done
+
+    if [[ "${TASK_SUCCESS}" != "true" ]]; then
         FAILED_INDICES+=("${SLURM_ARRAY_TASK_ID}")
     fi
 done

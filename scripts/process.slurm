@@ -10,7 +10,7 @@
 usage() {
     more <<EOF
 process.slurm
-    This script process a Zarr dataset using arco-make.
+    This script process a Zarr dataset using arco-make on CINECA Leonardo.
     The script reads the input dataset named CONFIG_NAME from
     INPUT_DIR and writes the result to "OUTPUT_DIR/OUTPUT_NAME".
     The script will look into CONFIG_DIR for a TOML recipe named CONFIG_NAME.
@@ -137,7 +137,9 @@ if [[ -n ${ENV_FILE} ]]; then
 fi
 
 # Load default modules
-load_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module load "${MODULE_TO_LOAD}"
+done
 
 # Check that apptainer is installed (only when not running from a local virtual environment)
 if [[ -z ${VENV} ]]; then
@@ -246,4 +248,6 @@ else
 fi
 
 # Deactivate all environments
-unload_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module unload "${MODULE_TO_LOAD}"
+done

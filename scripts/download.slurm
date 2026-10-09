@@ -10,7 +10,7 @@
 usage() {
     more <<EOF
 download_dataset.slurm
-    This script downloads datasets using arco-make.
+    This script downloads datasets using arco-make on CINECA Leonardo.
     If the dataset is a timeseries, it will download a range of dates computed from SLURM_ARRAY_TASK_ID.
     The script will look into CONFIG_DIR for a TOML recipe named CONFIG_NAME,
     and the output path will computed as "OUTPUT_DIR/CONFIG_NAME".
@@ -23,7 +23,7 @@ DESCRIPTION
     Options
         --project-dir                           Project root directory (default to current working directory).
         --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/download).
-        --output-dir                            Where to place the outputs (default to $DATA_ROOT/data/datasets).
+        --output-dir                            Where to place the outputs (default to \$DATA_ROOT/data/archive/\${CONFIG_NAME}).
         --zip                                   If to use zipped Zarr directory store for the outputs.
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/download).
         --no-array                              Whether to download dataset in a single shot, without using SLURM arrays (default false).
@@ -130,13 +130,20 @@ while true; do
     esac
 done
 
+# Remaining args: config name
+if [[ $# -lt 1 ]]; then
+    echo "Error: missing required argument config name" >&2
+    usage
+    exit 1
+fi
+
 # Change current directory to project root
 if [[ -z "${PROJECT_ROOT}" ]]; then
     PROJECT_ROOT="$(pwd)"
 fi
 cd "${PROJECT_ROOT}" || exit 1
 
-# Set default path envs and module loading 
+# Set default path envs and module loading
 if [[ -n ${ENV_FILE} ]]; then
     if [[ ! -f ${ENV_FILE} ]]; then
         echo "Error: environment file ${ENV_FILE} not found."
@@ -146,14 +153,8 @@ if [[ -n ${ENV_FILE} ]]; then
 fi
 
 # Load default modules
-load_modules
-
-# Check that download array ARCO-OCEAN variables are defined
-for var in [ARCO_OCEAN_ARRAY_START ARCO_OCEAN_ARRAY_END ARCO_OCEAN_ARRAY_STEP]; do
-    if [[ -z "${!var}" ]]; then
-        echo "${!var} environment variable not defined or empty."
-        exit 1
-    fi
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module load "${MODULE_TO_LOAD}"
 done
 
 # Check that apptainer is installed (only when not running from a local virtual environment)
@@ -170,7 +171,15 @@ else
     FLAGS="${FLAGS} --no-overwrite"
 fi
 
+# Download array ARCO-OCEAN variables are needed: check that they are defined
 if [[ ${ARRAY} == true ]]; then
+    for var in ARCO_OCEAN_ARRAY_START ARCO_OCEAN_ARRAY_END ARCO_OCEAN_ARRAY_STEP; do
+        if [[ -z "${!var}" ]]; then
+            echo "Error: ${var} environment variable not defined or empty."
+            exit 1
+        fi
+    done
+
     START_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * SLURM_ARRAY_TASK_ID ))  days" +"%Y-%m-%d")
     END_DATE=$(date -d "$ARCO_OCEAN_ARRAY_START + $(( ARCO_OCEAN_ARRAY_STEP * (SLURM_ARRAY_TASK_ID + 1) )) days" +"%Y-%m-%d")
     if [[ "$ARCO_OCEAN_ARRAY_END" < "$END_DATE" ]]; then
@@ -199,7 +208,12 @@ fi
 if [[ ! -d "${OUTPUT_DIR}" ]]; then
     mkdir -p "${OUTPUT_DIR}"
 fi
-OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.${OUTPUT_EXTENSION}"
+
+if [[ -n ${START_DATE} && -n ${END_DATE} ]]; then
+    OUTPUT_PATH="${OUTPUT_DIR}/${START_DATE}_${END_DATE}.${OUTPUT_EXTENSION}"
+else
+    OUTPUT_PATH="${OUTPUT_DIR}/${1}.${OUTPUT_EXTENSION}"
+fi
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
@@ -235,4 +249,6 @@ else
 fi
 
 # Deactivate all environments
-unload_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module unload "${MODULE_TO_LOAD}"
+done

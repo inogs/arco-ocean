@@ -8,7 +8,7 @@
 usage() {
     more <<EOF
 unpack_dataset.slurm
-    This script unpack a dataset stored as a collection of zipped Zarrs using arco-make.
+    This script unpack a dataset stored as a collection of zipped Zarrs using arco-make on CINECA Leonardo.
     It requires Apptainer to be installed. The script reads the input dataset named CONFIG_NAME from
     INPUT_DIR and writes the unzipped dataset to "OUTPUT_DIR/CONFIG_NAME".
     The script will look into "configs/unpack" for a TOML recipe named CONFIG_NAME.
@@ -20,10 +20,11 @@ SYNOPSIS
 DESCRIPTION
     Options
         --project-dir                           Project root directory (default to current working directory).
+        --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/unpack).
         --start                                 Overwrite config start date.
         --end                                   Overwrite config end date.
         --input-dir                             Where to look for data (default to \$DATA_ROOT/data/archive).
-        --output-dir                            Where to place the ouputs (default to \$DATA_ROOT/data/dataset).
+        --output-dir                            Where to place the outputs (default to \$DATA_ROOT/data/dataset).
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/unpack).
         --image                                 Apptainer image path (default oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
@@ -45,7 +46,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -56,6 +57,10 @@ while true; do
     case "$1" in
         (--project-dir)
             PROJECT_ROOT="${2}"
+            shift 2
+            ;;
+        (--config-dir)
+            CONFIG_DIR="${2}"
             shift 2
             ;;
         (--start)
@@ -140,7 +145,9 @@ if [[ -n ${ENV_FILE} ]]; then
 fi
 
 # Load default modules
-load_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module load "${MODULE_TO_LOAD}"
+done
 
 # Check that apptainer is installed (only when not running from a local virtual environment)
 if [[ -z ${VENV} ]]; then
@@ -166,7 +173,10 @@ if [[ -n ${END_DATE} ]]; then
 fi
 
 # Determine config file and input/output paths using the remaining argument
-CONFIG_PATH="${PROJECT_ROOT}/configs/unpack/${1}.toml"
+if [[ -z ${CONFIG_DIR} ]]; then
+    CONFIG_DIR="${PROJECT_ROOT}/configs/unpack"
+fi
+CONFIG_PATH="${CONFIG_DIR}/${1}.toml"
 
 # Set default INPUT_PATH
 if [[ -z ${INPUT_DIR} ]]; then
@@ -258,4 +268,6 @@ else
 fi
 
 # Deactivate all environments
-unload_modules
+for MODULE_TO_LOAD in "${MODULES[@]}"; do
+    module unload "${MODULE_TO_LOAD}"
+done
