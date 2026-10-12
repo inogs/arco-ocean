@@ -11,7 +11,7 @@ weighting_scale = 7
 [read]
 engine = "zarr"
 inline_array = false
-chunks = {time = "auto", level = -1, lat = -1, lon = -1}
+chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
 [[preprocess]]
@@ -64,13 +64,6 @@ time_coverage_resolution = "P1D"
 climatology_base_period = "1993 - 2023"
 featureType = "grid"
 
-[[postprocess_climatology]]
-name = "chunk"
-time = 1
-level = 1
-lat = -1
-lon = -1
-
 # Applied to the computed anomaly standard deviation dataset
 [[postprocess_anomaly_std]]
 name = "assign_var_attrs"
@@ -110,13 +103,6 @@ time_coverage_end = "2023-12-31T00:00:00Z"
 time_coverage_resolution = "P1D"
 climatology_base_period = "1993 - 2023"
 featureType = "grid"
-
-[[postprocess_anomaly_std]]
-name = "chunk"
-time = 1
-depth = 1
-lat = -1
-lon = -1
 
 # ==== SAVING CONFIGURATION ====
 [save]

@@ -4,7 +4,7 @@
 [read]
 engine="zarr"
 inline_array = false
-chunks = {time = "auto", level = -1, lat = -1, lon = -1}
+chunks = {time = "auto", depth = -1, lat = -1, lon = -1}
 
 # ==== CHECKS CONFIGURATION ====
 [checks.valid_global_ecmwf_coordinates]

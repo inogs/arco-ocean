@@ -7,7 +7,7 @@ skipna = true
 # ==== READING CONFIGURATION ====
 [read]
 inline_array = false
-chunks = {time = "auto", level = 1, lat = -1, lon = -1}
+chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
 [[process]]
@@ -21,6 +21,6 @@ time_dim = "time"
 # ==== SAVING CONFIGURATION ====
 [save]
 consolidated = true
-chunk = {level = 1, lat = -1, lon = -1}
+chunk = {depth = 1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}
 

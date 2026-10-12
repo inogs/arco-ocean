@@ -3,7 +3,7 @@
 # ==== READING CONFIGURATION ====
 [read]
 inline_array = false
-chunks = {dayofyear = "auto", level = -1, lat = -1, lon = -1}
+chunks = {dayofyear = "auto", depth = -1, lat = -1, lon = -1}
 
 # ==== CHECKS CONFIGURATION ====
 [checks.valid_global_ecmwf_coordinates]
