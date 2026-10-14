@@ -1,7 +1,8 @@
 #! /usr/bin/env bash
 #SBATCH --partition=dcgp_usr_prod
-#SBATCH --ntasks-per-node=112
-#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=112
 #SBATCH --exclusive
 #SBATCH --gres=tmpfs:3T
 
@@ -31,6 +32,7 @@ DESCRIPTION
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
+        --frisky                                Whether to enable frisky (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
@@ -39,6 +41,7 @@ EOF
 # Default options
 PROJECT_ROOT=""
 OVERWRITE=false
+FRISKY=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -46,7 +49,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,start:,end:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,frisky,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -103,6 +106,10 @@ while true; do
             OVERWRITE=true
             shift
             ;;
+        (--frisky)
+            FRISKY=true
+            shift
+            ;;
         (--log-level)
             LOG_LEVEL="$2"; shift 2
             ;;
@@ -155,13 +162,17 @@ if [[ -z ${VENV} ]]; then
 fi
 
 # Build command line flags
-FLAGS="--scheduler-type=mpi \
+FLAGS="--dask-setup=localcluster \
        --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
     FLAGS="${FLAGS} --overwrite"
 else
     FLAGS="${FLAGS} --no-overwrite"
+fi
+
+if [[ ${FRISKY} == true ]]; then
+    FLAGS="${FLAGS} --frisky"
 fi
 
 if [[ -n ${START_DATE} ]]; then
@@ -244,7 +255,7 @@ export DASK_MPI__LOCAL_DIRECTORY=${TMPDIR}
 
 # Build the run command: either a local virtual environment or an Apptainer image
 if [[ -n ${VENV} ]]; then
-    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --no-sync arco-make)
+    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --active --no-sync arco-make)
 else
     APPTAINER_FLAGS=()
     for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do

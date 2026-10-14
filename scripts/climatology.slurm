@@ -1,10 +1,11 @@
 #! /usr/bin/env bash
 #SBATCH --partition=dcgp_usr_prod
-#SBATCH --nodes=8
+#SBATCH --qos=dcgp_qos_bprod
+#SBATCH --nodes=32
 #SBATCH --ntasks-per-node=7
 #SBATCH --cpus-per-task=16
 #SBATCH --exclusive
-#SBATCH --time=500
+#SBATCH --time=60
 #SBATCH --gres=tmpfs:3T
 
 # NOTICE: While computing the stats (mean, std, and diff std) scales well, computing the climatology using the 
@@ -39,7 +40,7 @@ DESCRIPTION
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
         --overwrite                             Whether to overwrite destination (default false).
-        --no-sync-step                          Whether to synchronize steps (default true).
+        --frisky                                Whether to enable frisky (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
@@ -48,6 +49,7 @@ EOF
 # Default options
 PROJECT_ROOT=""
 OVERWRITE=false
+FRISKY=false
 SYNC_STEP=true
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
@@ -56,7 +58,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,no-sync-step,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,frisky,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -105,8 +107,8 @@ while true; do
             OVERWRITE=true
             shift
             ;;
-        (--no-sync-step)
-            SYNC_STEP=false
+        (--frisky)
+            FRISKY=true
             shift
             ;;
         (--log-level)
@@ -161,7 +163,7 @@ if [[ -z ${VENV} ]]; then
 fi
 
 # Build command line flags
-FLAGS="--scheduler-type=mpi \
+FLAGS="--dask-setup=mpi \
        --log-level=${LOG_LEVEL}"
 
 if [[ ${OVERWRITE} == true ]]; then
@@ -170,10 +172,8 @@ else
     FLAGS="${FLAGS} --no-overwrite"
 fi
 
-if [[ ${SYNC_STEP} == true ]]; then
-    FLAGS="${FLAGS} --sync-step"
-else
-    FLAGS="${FLAGS} --no-sync-step"
+if [[ ${FRISKY} == true ]]; then
+    FLAGS="${FLAGS} --frisky"
 fi
 
 # Determine config file and input/output paths using the remaining argument
@@ -247,10 +247,11 @@ export DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT="300s"
 export DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP="300s"
 export DASK_DISTRIBUTED__SCHEDULER__WORKER_TTL="600s"
 export DASK_DISTRIBUTED__CLIENT__HEARTBEAT="10s"
+export DASK_ARRAY__CHUNK_SIZE="512 MiB"
 
 # Build the run command: either a local virtual environment or an Apptainer image
 if [[ -n ${VENV} ]]; then
-    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --no-sync arco-make)
+    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --active --no-sync arco-make)
 else
     APPTAINER_FLAGS=()
     for BIND in "${BINDS[@]+"${BINDS[@]}"}"; do
