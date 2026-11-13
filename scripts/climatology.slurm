@@ -1,11 +1,11 @@
 #! /usr/bin/env bash
 #SBATCH --partition=dcgp_usr_prod
 #SBATCH --qos=dcgp_qos_bprod
-#SBATCH --nodes=32
+#SBATCH --nodes=64
 #SBATCH --ntasks-per-node=7
 #SBATCH --cpus-per-task=16
 #SBATCH --exclusive
-#SBATCH --time=60
+#SBATCH --time=45
 #SBATCH --gres=tmpfs:3T
 
 # NOTICE: While computing the stats (mean, std, and diff std) scales well, computing the climatology using the 
@@ -50,7 +50,6 @@ EOF
 PROJECT_ROOT=""
 OVERWRITE=false
 FRISKY=false
-SYNC_STEP=true
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -197,6 +196,7 @@ if [[ ! -d "${OUTPUT_DIR}" ]]; then
 fi
 CLIMATOLOGY_OUTPUT_PATH="${OUTPUT_DIR}/${1}_climatology"
 ANOMALY_STD_OUTPUT_PATH="${OUTPUT_DIR}/${1}_anomaly_std"
+TENDENCY_STD_OUTPUT_PATH="${OUTPUT_DIR}/${1}_tendency_std"
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
@@ -261,7 +261,7 @@ else
 fi
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  "${RUN_CMD[@]}" compute-climatology ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}"
+  "${RUN_CMD[@]}" compute-climatology ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}" "${TENDENCY_STD_OUTPUT_PATH}"
 
 CLIMATOLOGY_EXIT_CODE=$?
 
