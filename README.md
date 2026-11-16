@@ -229,7 +229,7 @@ dataset = xr.open_dataset(store, engine='zarr')
 
 The dataset can be accessed using the Hive partition format `s3://ogs-arco-ocean/dataset/<dataset_name>_tres-<time_resolution>_res-<horizontal_resolution_in_deg>_levels-<number_of_vertical_levels>`. At the moment, we distribute a single version with full path `s3://ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10`.
 
-Along with the main dataset, statistics computed with respect to the time dimension are also provided. These are the climatology, the mean, the standard deviation, and the standard deviation of the increments between consecutive time steps. These can be accessed using paths: `s3://ogs-arco-ocean/stats=<stats_name>/tres=<time_resolution>/res=<horizontal_resolution_in_deg>/levels=<number_of_vertical_levels>`, where `<stats_name>` is one of `climatology`, `mean`, `std`, or `diff_std`.
+Along with the main dataset, statistics computed with respect to the time dimension are also provided. These are the climatology, the anomaly standard deviation, and the mean. These can be accessed using paths: `s3://ogs-arco-ocean/stats=<stats_name>/tres=<time_resolution>/res=<horizontal_resolution_in_deg>/levels=<number_of_vertical_levels>`, where `<stats_name>` is one of `climatology`, `anomaly_std`, or `mean`.
 
 ## Tutorials
 

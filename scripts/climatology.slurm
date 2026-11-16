@@ -8,7 +8,7 @@
 #SBATCH --time=45
 #SBATCH --gres=tmpfs:3T
 
-# NOTICE: While computing the stats (mean, std, and diff std) scales well, computing the climatology using the 
+# NOTICE: While computing the mean scales well, computing the climatology using the 
 #   implementation in arco-make is slow and bounded by communications. As for the latter, it would make more sense
 #   to have a longer job running on a single node and using a LocalCluster with the  inproc:// protocol 
 #   (i.e., processes=False), thus reducing the communication (and serialization) time.
@@ -196,6 +196,9 @@ if [[ ! -d "${OUTPUT_DIR}" ]]; then
 fi
 CLIMATOLOGY_OUTPUT_PATH="${OUTPUT_DIR}/${1}_climatology"
 ANOMALY_STD_OUTPUT_PATH="${OUTPUT_DIR}/${1}_anomaly_std"
+if [[ -e "${OUTPUT_DIR}/${1}_tendency_std" ]]; then
+    echo "WARNING: ${OUTPUT_DIR}/${1}_tendency_std is left from an earlier run: the tendency std is no longer produced; remove it before publishing." >&2
+fi
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
