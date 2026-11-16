@@ -196,7 +196,6 @@ if [[ ! -d "${OUTPUT_DIR}" ]]; then
 fi
 CLIMATOLOGY_OUTPUT_PATH="${OUTPUT_DIR}/${1}_climatology"
 ANOMALY_STD_OUTPUT_PATH="${OUTPUT_DIR}/${1}_anomaly_std"
-TENDENCY_STD_OUTPUT_PATH="${OUTPUT_DIR}/${1}_tendency_std"
 
 # Set default LOG_DIR and ensure it exists
 if [[ -z ${LOG_DIR} ]]; then
@@ -261,7 +260,7 @@ else
 fi
 
 srun --output="${LOG_DIR}"/%j_%N_%t.out --error="${LOG_DIR}"/%j_%N_%t.err \
-  "${RUN_CMD[@]}" compute-climatology ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}" "${TENDENCY_STD_OUTPUT_PATH}"
+  "${RUN_CMD[@]}" compute-climatology ${FLAGS} -- "${CONFIG_PATH}" "${INPUT_PATH}" "${CLIMATOLOGY_OUTPUT_PATH}" "${ANOMALY_STD_OUTPUT_PATH}"
 
 CLIMATOLOGY_EXIT_CODE=$?
 
