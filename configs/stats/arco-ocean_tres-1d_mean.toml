@@ -1,26 +1,23 @@
 # SPDX-FileCopyrightText: 2026 Stefano Campanella
 # SPDX-License-Identifier: MIT
-# ==== STATS PARAMETERS ====
-time_dim = "time"
-skipna = true
-
 # ==== READING CONFIGURATION ====
 [read]
 inline_array = false
 chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
-[[process]]
-name = "mean"
-dim = "time"
-
+# Static variables first: after the mean over time no variable has a time dimension, and
+# `drop_static_vars` would drop them all.
 [[process]]
 name = "drop_static_vars"
 time_dim = "time"
 
+[[process]]
+name = "mean"
+dim = "time"
+
 # ==== SAVING CONFIGURATION ====
 [save]
 consolidated = true
-chunk = {depth = 1, lat = -1, lon = -1}
+chunks = {depth = 1, lat = -1, lon = -1}
 compressor = {cname = "lz4", clevel = 1}
-
