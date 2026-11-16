@@ -1,17 +1,16 @@
 # SPDX-FileCopyrightText: 2026 Stefano Campanella
 # SPDX-License-Identifier: MIT
+# Mean over the whole time axis of a dataset. Variables without the time dimension (masks,
+# bathymetry) are kept unchanged, so the mean can be masked without the main dataset.
+# Run through scripts/process.slurm, which finds it as configs/process/<dataset name>.toml.
+
 # ==== READING CONFIGURATION ====
 [read]
+engine = "zarr"
 inline_array = false
 chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
-# Static variables first: after the mean over time no variable has a time dimension, and
-# `drop_static_vars` would drop them all.
-[[process]]
-name = "drop_static_vars"
-time_dim = "time"
-
 [[process]]
 name = "mean"
 dim = "time"
