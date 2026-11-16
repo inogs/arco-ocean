@@ -11,6 +11,11 @@ inline_array = false
 chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
 
 # ==== PREPROCESSING PIPELINES ====
+# Same reference period as the climatology (1993-2018): later years are held out.
+[[process]]
+name = "sel"
+time = {start = "1993-01-01", stop = "2018-12-31"}
+
 [[process]]
 name = "mean"
 dim = "time"

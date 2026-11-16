@@ -3,7 +3,7 @@
 # ==== READING CONFIGURATION ====
 [read]
 inline_array = false
-chunks = {dayofyear = "auto", depth = -1, lat = -1, lon = -1}
+chunks = {time = "auto", depth = -1, lat = -1, lon = -1}
 
 # ==== CHECKS CONFIGURATION ====
 [checks.valid_global_ecmwf_coordinates]
@@ -11,7 +11,7 @@ latitude_dim = "lat"
 longitude_dim = "lon"
 
 [checks.ensure_no_nans]
-time_dim = "dayofyear"
+time_dim = "time"
 glofas_mask = ["uparea", "dis24"]
 glorys_mask = ["mlotst", "uo", "usi", "vo", "vsi", "sithick", "siconc", "so", "so_bottom", "thetao", "thetao_bottom", "zos", "glorys_deptho"]
 waverys_mask = ["swh", "mwp", "mwd", "usd", "vsd"]

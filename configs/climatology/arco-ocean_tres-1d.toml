@@ -28,14 +28,13 @@ time_dim = "time"
 name = "assign_var_attrs"
 
 [postprocess_climatology.time]
-standard_name = "time"
-long_name = "climatological time"
-axis = "T"
+long_name = "day of a 365-day year (bin)"
+comment = "Bin k is day k of a 365-day year (0 = Jan 1, 364 = Dec 31). In leap years, Feb 29 uses bin 58 (Feb 28) and later days use the bin of the same date: index with the day of year minus 1, minus 1 more after Feb 29 in leap years."
 
 [[postprocess_climatology]]
 name = "assign_attrs"
 title = "ARCO-OCEAN Daily Climatology (1993 - 2018)"
-summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2018 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days). Feb 29 is included in the Feb 28 statistics; on Feb 29, use the Feb 28 values."
+summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2018 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days). Bins are days of a 365-day year (0 = Jan 1): Feb 29 values are pooled with Feb 28 (so that bin holds about a quarter more values) and later days of leap years use the bin of the same date; on Feb 29, use the Feb 28 values."
 id = "https://doi.org/10.5281/zenodo.17751760"
 Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
@@ -68,14 +67,13 @@ featureType = "grid"
 name = "assign_var_attrs"
 
 [postprocess_anomaly_std.time]
-standard_name = "time"
-long_name = "climatological time"
-axis = "T"
+long_name = "day of a 365-day year (bin)"
+comment = "Bin k is day k of a 365-day year (0 = Jan 1, 364 = Dec 31). In leap years, Feb 29 uses bin 58 (Feb 28) and later days use the bin of the same date: index with the day of year minus 1, minus 1 more after Feb 29 in leap years."
 
 [[postprocess_anomaly_std]]
 name = "assign_attrs"
 title = "ARCO-OCEAN Daily Anomaly Standard Deviations (1993 - 2018)"
-summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2018 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days). Feb 29 is included in the Feb 28 statistics; on Feb 29, use the Feb 28 values."
+summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2018 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days). Bins are days of a 365-day year (0 = Jan 1): Feb 29 values are pooled with Feb 28 (so that bin holds about a quarter more values) and later days of leap years use the bin of the same date; on Feb 29, use the Feb 28 values."
 id = "https://doi.org/10.5281/zenodo.17751760"
 Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
