@@ -40,8 +40,8 @@ DESCRIPTION
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default: scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within Apptainer container (can be repeated).
-        --overwrite                             Whether to overwrite destination (default: false).
-        --no-overwrite                          Do not overwrite destination.
+        --replace                             Write a new version of an existing output (arco-make --replace; default: false).
+        --no-replace                          Refuse an existing output.
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --retries, --max-retries N              Maximum retries per task (default: 3).
         --retry-delay N                         Delay in seconds between retries (default: 5).
@@ -76,7 +76,7 @@ OUTPUT_DIR=""
 CLI_LOG_DIR=""
 OUTPUT_EXTENSION="zarr"
 ARRAY=true
-OVERWRITE=false
+REPLACE=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -176,12 +176,12 @@ while [[ $# -gt 0 ]]; do
             BINDS+=("$2")
             shift 2
             ;;
-        --overwrite)
-            OVERWRITE=true
+        --replace)
+            REPLACE=true
             shift
             ;;
-        --no-overwrite)
-            OVERWRITE=false
+        --no-replace)
+            REPLACE=false
             shift
             ;;
         --log-level=*)
@@ -398,10 +398,10 @@ for (( TASK_INDEX=START_INDEX; TASK_INDEX<=MAX_INDEX; TASK_INDEX++ )); do
     # Build flags for arco-make download
     FLAGS=(--no-progress --log-level="${LOG_LEVEL}")
 
-    if [[ "${OVERWRITE}" == true ]]; then
-        FLAGS+=(--overwrite)
+    if [[ "${REPLACE}" == true ]]; then
+        FLAGS+=(--replace)
     else
-        FLAGS+=(--no-overwrite)
+        FLAGS+=(--no-replace)
     fi
 
     if [[ -n "${START_DATE}" ]]; then

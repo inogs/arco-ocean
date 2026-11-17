@@ -39,7 +39,7 @@ DESCRIPTION
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
-        --overwrite                             Whether to overwrite destination (default false).
+        --replace                             Write a new version of an existing output (arco-make --replace; default false).
         --frisky                                Whether to enable frisky (default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
@@ -48,7 +48,7 @@ EOF
 
 # Default options
 PROJECT_ROOT=""
-OVERWRITE=false
+REPLACE=false
 FRISKY=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
@@ -57,7 +57,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,overwrite,frisky,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,input-dir:,output-dir:,log-dir:,image:,virtual-env:,env-file:,bind:,replace,frisky,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -102,8 +102,8 @@ while true; do
             BINDS+=("${2}")
             shift 2
             ;;
-        (--overwrite)
-            OVERWRITE=true
+        (--replace)
+            REPLACE=true
             shift
             ;;
         (--frisky)
@@ -165,10 +165,10 @@ fi
 FLAGS="--dask-setup=mpi \
        --log-level=${LOG_LEVEL}"
 
-if [[ ${OVERWRITE} == true ]]; then
-    FLAGS="${FLAGS} --overwrite"
+if [[ ${REPLACE} == true ]]; then
+    FLAGS="${FLAGS} --replace"
 else
-    FLAGS="${FLAGS} --no-overwrite"
+    FLAGS="${FLAGS} --no-replace"
 fi
 
 if [[ ${FRISKY} == true ]]; then

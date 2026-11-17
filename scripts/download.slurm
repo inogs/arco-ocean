@@ -32,7 +32,7 @@ DESCRIPTION
         --virtual-env PATH                      Run from a local virtual environment (VIRTUAL_ENV path) instead of Apptainer.
         --env-file FILE                         Environment file to source (default scripts/.env).
         --bind SRC[:DST[:OPTS]]                 Path to bind within the Apptainer container (can be repeated).
-        --overwrite                             Whether to overwrite destination (default false).
+        --replace                             Write a new version of an existing output (arco-make --replace; default false).
         --log-level LEVEL                       Logging level (debug, info, warning, error, critical). Default: info.
         --help                                  Shows this help.
 EOF
@@ -42,7 +42,7 @@ EOF
 PROJECT_ROOT=""
 OUTPUT_EXTENSION="zarr"
 ARRAY=true
-OVERWRITE=false
+REPLACE=false
 LOG_LEVEL="info"
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
@@ -50,7 +50,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,output-dir:,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,output-dir:,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,replace,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -102,8 +102,8 @@ while true; do
             BINDS+=("${2}")
             shift 2
             ;;
-        (--overwrite)
-            OVERWRITE=true
+        (--replace)
+            REPLACE=true
             shift
             ;;
         (--log-level)
@@ -160,10 +160,10 @@ fi
 # Build command line flags
 FLAGS="--no-progress --log-level=${LOG_LEVEL}"
 
-if [[ ${OVERWRITE} == true ]]; then
-    FLAGS="${FLAGS} --overwrite"
+if [[ ${REPLACE} == true ]]; then
+    FLAGS="${FLAGS} --replace"
 else
-    FLAGS="${FLAGS} --no-overwrite"
+    FLAGS="${FLAGS} --no-replace"
 fi
 
 # Download array ARCO-OCEAN variables are needed: check that they are defined
