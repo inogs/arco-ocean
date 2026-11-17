@@ -542,7 +542,7 @@ featureType = "grid"
 [save]
 consolidated = true
 chunks = {time = 1, depth = 1, lat = -1, lon = -1}
-compressor = {cname = "lz4", clevel = 1}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
 
 [save.encoding.time]
 units = "days since 1993-01-01"

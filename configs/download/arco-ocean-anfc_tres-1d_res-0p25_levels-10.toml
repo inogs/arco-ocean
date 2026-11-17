@@ -5,7 +5,7 @@ end = 2025-01-04T00:00:00
 
 [datasets.era5.checkpointing]
 step = "128D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.era5.parts]]
 filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
@@ -62,7 +62,7 @@ deep = false
 
 [datasets.era5_cumulative.checkpointing]
 step = "128D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.era5_cumulative.parts]]
 filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
@@ -117,7 +117,7 @@ deep = false
 
 [datasets.glofas.checkpointing]
 step = "64D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.glofas.parts]]
 filename_or_obj = "ewds://cems-glofas-historical"
@@ -197,7 +197,7 @@ deep = false
 
 [datasets.glorys.checkpointing]
 step = "4D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.glorys.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
@@ -270,7 +270,7 @@ deep = false
 
 [datasets.glorys_bottom.checkpointing]
 step = "4D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.glorys_bottom.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_P1D-m"
@@ -320,7 +320,7 @@ deep = false
 
 [datasets.glorys_seaice.checkpointing]
 step = "128D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.glorys_seaice.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
@@ -423,7 +423,7 @@ deep = false
 
 [datasets.waverys.checkpointing]
 step = "64D"
-compressor = {cname = "lz4", clevel = 3}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
 [[datasets.waverys.parts]]
 filename_or_obj = "cm://cmems_mod_glo_wav_anfc_0.083deg_PT3H-i"
@@ -614,7 +614,7 @@ featureType = "grid"
 [save]
 consolidated = true
 chunks = {time = 1, level = -1, lat = -1, lon = -1}
-compressor = {cname = "lz4", clevel = 1}
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
 
 [save.encoding.time]
 units = "days since 1993-01-01"
