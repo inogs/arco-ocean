@@ -486,7 +486,6 @@ name = "transpose"
 dims = ["time", "level", "lat", "lon"]
 
 [save]
-consolidated = true
 chunks = {time = 1, level = -1, lat = -1, lon = -1}
 compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
 

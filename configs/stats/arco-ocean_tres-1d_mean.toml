@@ -6,7 +6,7 @@
 
 # ==== READING CONFIGURATION ====
 [read]
-engine = "zarr"
+engine = "icechunk"  # an output of arco-make
 inline_array = false
 chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
 
@@ -22,6 +22,5 @@ dim = "time"
 
 # ==== SAVING CONFIGURATION ====
 [save]
-consolidated = true
 chunks = {depth = 1, lat = -1, lon = -1}
 compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]

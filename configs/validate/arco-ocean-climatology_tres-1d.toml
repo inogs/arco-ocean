@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 # ==== READING CONFIGURATION ====
 [read]
+engine = "icechunk"  # an output of arco-make
 inline_array = false
 chunks = {time = "auto", depth = -1, lat = -1, lon = -1}
 
