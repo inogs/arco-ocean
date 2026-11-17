@@ -32,7 +32,6 @@ DESCRIPTION
         --project-dir DIR                       Project root directory (default: current working directory).
         --config-dir DIR                        Where to look for configs (default: \${PROJECT_ROOT}/configs/download).
         --output-dir DIR                        Where to place the outputs (default: \$DATA_ROOT/data/archive/\${CONFIG_NAME}).
-        --zip                                   If to use zipped Zarr directory store for the outputs.
         --log-dir DIR                           Where to place the logs (default: \${PROJECT_ROOT}/logs/download).
         --no-array                              Whether to download dataset in a single shot, without array slicing (default: false).
         --start DATE                            Overwrite config start date (YYYY-MM-DD).
@@ -124,10 +123,6 @@ while [[ $# -gt 0 ]]; do
         --log-dir)
             CLI_LOG_DIR="$2"
             shift 2
-            ;;
-        --zip)
-            OUTPUT_EXTENSION="zip"
-            shift
             ;;
         --no-array)
             ARRAY=false

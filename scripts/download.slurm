@@ -24,7 +24,6 @@ DESCRIPTION
         --project-dir                           Project root directory (default to current working directory).
         --config-dir                            Where to look for configs (default to \${PROJECT_ROOT}/configs/download).
         --output-dir                            Where to place the outputs (default to \$DATA_ROOT/data/archive/\${CONFIG_NAME}).
-        --zip                                   If to use zipped Zarr directory store for the outputs.
         --log-dir                               Where to place the logs (default to \${PROJECT_ROOT}/logs/download).
         --no-array                              Whether to download dataset in a single shot, without using SLURM arrays (default false).
         --start                                 Overwrite config start date.
@@ -51,7 +50,7 @@ ENV_FILE="scripts/.env"
 BINDS=()
 
 # Parse command line options
-ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,output-dir:,zip,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
+ARGS=$(getopt --options '' --longoptions "project-dir:,config-dir:,output-dir:,log-dir:,no-array,start:,end:,image:,virtual-env:,env-file:,bind:,overwrite,log-level:,help" --name "$0" -- "${@}")
 if [[ ${?} -ne 0 ]]; then
     usage
     exit 1
@@ -70,10 +69,6 @@ while true; do
         (--output-dir)
             OUTPUT_DIR="${2}"
             shift 2
-            ;;
-        (--zip)
-            OUTPUT_EXTENSION="zip"
-            shift
             ;;
         (--log-dir)
             LOG_DIR="${2}"
