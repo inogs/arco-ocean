@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: MIT
 # Mean over the whole time axis of a dataset. Variables without the time dimension (masks,
 # bathymetry) are kept unchanged, so the mean can be masked without the main dataset.
-# Run through scripts/process.slurm, which finds it as configs/process/<dataset name>.toml.
+# A proof of concept of `arco-make process`, not a published product. configs/process/<dataset>.toml
+# link here; the output goes to mean/res=<res> by convention, e.g.:
+#   arco-make process --dask-setup threads configs/process/historical_res-0p25.toml \
+#     DATA/historical/res=0p25 DATA/mean/res=0p25
 
 # ==== READING CONFIGURATION ====
 [read]
