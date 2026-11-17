@@ -291,8 +291,12 @@ dataset_part = "bathy"
 service = "static-arco"
 chunks = {depth = 1, latitude = -1, longitude = -1}
 
-# The Copernicus Marine toolbox refuses coordinates in `variables` (since #534): the 3D
-# mask brings the depth coordinate, and is dropped before anything reads it.
+# WORKAROUND: we want `variables = ["deptho", "depth"]`, but the Copernicus Marine toolbox
+# refuses coordinates in `variables` since mercator-ocean/copernicus-marine-toolbox#534
+# (https://github.com/mercator-ocean/copernicus-marine-toolbox/pull/534, not in 2.5.1):
+# "The variable 'depth' is neither a variable or a standard name in the dataset". The 3D mask
+# brings the same depth coordinate, which get_sea_mask needs, and is dropped before anything
+# reads it. Revert when the toolbox accepts coordinates again.
 [[datasets.glorys_static.postprocess]]
 name = "drop_vars"
 names = ["mask"]
