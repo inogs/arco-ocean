@@ -22,5 +22,7 @@ dim = "time"
 
 # ==== SAVING CONFIGURATION ====
 [save]
+# Versions kept: the current one (statistics can be recomputed).
+keep_versions = 1
 chunks = {depth = 1, lat = -1, lon = -1}
 compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
