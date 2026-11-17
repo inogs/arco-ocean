@@ -363,10 +363,16 @@ deep = false
 [[datasets.glorys_static.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_static"
 engine = "copernicusmarine"
-variables = ["deptho", "depth"]
+variables = ["deptho", "mask"]
 dataset_part = "bathy"
 service = "static-arco"
 chunks = {depth = 1, latitude = -1, longitude = -1}
+
+# The Copernicus Marine toolbox refuses coordinates in `variables` (since #534): the 3D
+# mask brings the depth coordinate, and is dropped before anything reads it.
+[[datasets.glorys_static.postprocess]]
+name = "drop_vars"
+names = ["mask"]
 
 [[datasets.glorys_static.postprocess]]
 name = "sel"
