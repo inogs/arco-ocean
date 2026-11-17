@@ -64,8 +64,11 @@ deep = false
 step = "128D"
 compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 3, shuffle = "shuffle"}}]
 
+# ERA5 hourly accumulations cover the hour ending at their stamp (the value stamped 00:00 is
+# the last hour of the previous day): moved back one hour, day D sums its own hours 00-23.
 [[datasets.era5_cumulative.parts]]
 filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+time_offset = "-1h"
 engine = "zarr"
 consolidated = true
 storage_options = {token = "anon"}
