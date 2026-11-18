@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Stefano Campanella
 # SPDX-License-Identifier: MIT
-# Note: Memory consumption is highly sensitive to the parts chunking.
-#   The following values are proven to work on 32 CPUs and about 110 GB of RAM and no checkpointint.
-#   The whole download takes a few days, be sure you have a profile that allows that in save storage_options.
+# Chunks are planned by arco-make for each block (`arco-make download --plan` prints them).
+# The whole download takes a few days: the profile in [save] storage_options must allow that.
 time_dim = "time"
 start = 1993-01-01T00:00:00
 end = 2024-01-01T00:00:00
@@ -13,7 +12,6 @@ filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.
 engine = "zarr"
 consolidated = true
 storage_options = {token = "anon"}
-chunks = {time = 24, latitude = -1, longitude = -1}
 
 [[datasets.era5.postprocess]]
 name = "select_variables"
@@ -36,12 +34,6 @@ time = "1 D"
 label = "left"
 closed = "left"
 reduce = "mean"
-
-[[datasets.era5.postprocess]]
-name = "chunk"
-time = 32
-latitude = -1
-longitude = -1
 
 [[datasets.era5.postprocess]]
 name = "rename"
@@ -75,7 +67,6 @@ time_offset = "-1h"
 engine = "zarr"
 consolidated = true
 storage_options = {token = "anon"}
-chunks = {time = 24, latitude = -1, longitude = -1}
 
 [[datasets.era5_cumulative.postprocess]]
 name = "select_variables"
@@ -98,12 +89,6 @@ time = "1 D"
 label = "left"
 closed = "left"
 reduce = "sum"
-
-[[datasets.era5_cumulative.postprocess]]
-name = "chunk"
-time = 32
-latitude = -1
-longitude = -1
 
 [[datasets.era5_cumulative.postprocess]]
 name = "rename"
@@ -135,14 +120,13 @@ hydrological_model = "lisflood"
 product_type = "consolidated"
 timespan = "time_mean"
 variable = "average_river_discharge_in_the_last_24_hours"
-chunks = {time = 1, latitude = -1, longitude = -1}
 
 [[datasets.glofas.postprocess]]
 name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold = 0.0, output_chunks = {time = 16, latitude = -1, longitude = -1}}
+kwargs = {skipna = true, nan_threshold = 0.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glofas.postprocess]]
@@ -170,14 +154,13 @@ deep = false
 [[datasets.glofas_static.parts]]
 filename_or_obj = "https://confluence.ecmwf.int/download/attachments/242067380/uparea_glofas_v4_0.nc"
 engine = "netcdfoverhttp"
-chunks = {latitude = -1, longitude = -1}
 
 [[datasets.glofas_static.postprocess]]
 name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold = 0.0, output_chunks = {latitude = -1, longitude = -1}}
+kwargs = {skipna = true, nan_threshold = 0.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glofas_static.postprocess]]
@@ -210,7 +193,6 @@ variables = ["uo", "vo", "so", "thetao", "zos"]
 dataset_version = "202311"
 dataset_part = "default"
 service = "arco-geo-series"
-chunks = {time = 2, depth = 1, latitude = -1, longitude = -1}
 
 [[datasets.glorys.postprocess]]
 name = "sel"
@@ -227,7 +209,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time=16, depth = 1, latitude = -1, longitude = -1}}
+kwargs = {skipna = true, nan_threshold=1.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys.postprocess]]
@@ -254,7 +236,6 @@ variables = ["sithick", "siconc", "usi", "vsi"]
 dataset_version = "202311"
 dataset_part = "default"
 service = "arco-geo-series"
-chunks = {time = 2, latitude = -1, longitude = -1}
 
 [[datasets.glorys_seaice.postprocess]]
 name = "sel"
@@ -265,7 +246,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = false, output_chunks = {time = 16, latitude = -1, longitude = -1}}
+kwargs = {skipna = false}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys_seaice.postprocess]]
@@ -292,7 +273,6 @@ variables = ["deptho", "mask"]
 dataset_version = "202311"
 dataset_part = "bathy"
 service = "static-arco"
-chunks = {depth = 1, latitude = -1, longitude = -1}
 
 # WORKAROUND: we want `variables = ["deptho", "depth"]`, but the Copernicus Marine toolbox
 # refuses coordinates in `variables` since mercator-ocean/copernicus-marine-toolbox#534
@@ -313,7 +293,7 @@ name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = false, output_chunks = {depth = 1, latitude = -1, longitude = -1}}
+kwargs = {skipna = false}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.glorys_static.postprocess]]
@@ -353,14 +333,13 @@ variables = ["VHM0", "VTM10", "VMDR", "VSDX", "VSDY"]
 dataset_version = "202411"
 dataset_part = "default"
 service = "arco-geo-series"
-chunks = {time = 8, latitude = -1, longitude = -1}
 
 [[datasets.waverys.postprocess]]
 name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = true, nan_threshold=1.0, output_chunks = {time = 16, latitude = -1, longitude = -1}}
+kwargs = {skipna = true, nan_threshold=1.0}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.waverys.postprocess]]
@@ -369,12 +348,6 @@ time = "1 D"
 label = "left"
 closed = "left"
 reduce = "mean"
-
-[[datasets.waverys.postprocess]]
-name = "chunk"
-time = 16
-latitude = -1
-longitude = -1
 
 [[datasets.waverys.postprocess]]
 name = "astype"
@@ -404,14 +377,13 @@ dataset_version = "202311"
 variables = "deptho"
 dataset_part = "bathy"
 service = "static-arco"
-chunks = {latitude = -1, longitude = -1}
 
 [[datasets.waverys_static.postprocess]]
 name = "regrid"
 method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
-kwargs = {skipna = false, output_chunks = {latitude = -1, longitude = -1}}
+kwargs = {skipna = false}
 grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
 
 [[datasets.waverys_static.postprocess]]
@@ -441,13 +413,6 @@ name = "drop_attrs"
 deep = false
 
 # ==== SAVING SECTION ====
-
-[[postprocess]]
-name = "chunk"
-time = 32
-depth = 1
-lat = -1
-lon = -1
 
 [[postprocess]]
 name = "transpose"
