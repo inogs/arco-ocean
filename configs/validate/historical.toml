@@ -19,6 +19,10 @@ freq = "1D"
 
 [checks.ensure_no_nans]
 time_dim = "time"
-glofas_mask = ["uparea", "dis24"]
-glorys_mask = ["mlotst", "uo", "usi", "vo", "vsi", "sithick", "siconc", "so", "so_bottom", "thetao", "thetao_bottom", "zos", "glorys_deptho"]
-waverys_mask = ["swh", "mwp", "mwd", "usd", "vsd"]
+# Ocean and sea-ice fields inside the sea (seafrac > 0); every other variable everywhere.
+seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+# Values exactly where the static sea fraction is positive: none missing inside, none outside.
+[checks.fraction_domain]
+time_dim = "time"
+seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]

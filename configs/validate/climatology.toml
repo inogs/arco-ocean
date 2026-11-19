@@ -11,9 +11,5 @@ chunks = {time = "auto", depth = -1, lat = -1, lon = -1}
 latitude_dim = "lat"
 longitude_dim = "lon"
 
-[checks.ensure_no_nans]
-time_dim = "time"
-glofas_mask = ["uparea", "dis24"]
-glorys_mask = ["mlotst", "uo", "usi", "vo", "vsi", "sithick", "siconc", "so", "so_bottom", "thetao", "thetao_bottom", "zos", "glorys_deptho"]
-waverys_mask = ["swh", "mwp", "mwd", "usd", "vsd"]
-
+# The climatology drops the static variables (`drop_static_vars`), the sea fraction included:
+# missing values are checked on the dataset it is computed from (validate/historical.toml).
