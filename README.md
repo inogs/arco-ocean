@@ -47,52 +47,32 @@ This is to reduce the memory footprint of the dataset while keeping a faithful r
 
 All dynamic variables, except the bottom temperature for the above reason, have been kept, and their names reflect those used in the source dataset.
 
-| Variable name | Description                      | Data type | Units   | Assimilated |
-|---------------|----------------------------------|-----------|---------|-------------|
-| `thetao`      | Potential temperature            | float32   | °C      | Yes         |
-| `so`          | Salinity                         | float32   | - (PSU) | Yes         |
-| `uo`          | Eastward ocean current velocity  | float32   | m/s     | No          |
-| `vo`          | Northward ocean current velocity | float32   | m/s     | No          |
-| `zos`         | Sea surface height above geoid   | float32   | m       | Yes         |
-| `mlostst`     | Mixed layer thickness            | float32   | m       | No          |
-| `siconc`      | Sea ice concentration            | float32   | -       | Yes         |
-| `sithick`     | Sea ice thickness                | float32   | m       | No          |
-| `usi`         | Eastward sea ice velocity        | float32   | m/s     | No          |
-| `vsi`         | Northward sea ice velocity       | float32   | m/s     | No          |
+| Variable name | Description                                   | Data type | Units   | Assimilated |
+|---------------|-----------------------------------------------|-----------|---------|-------------|
+| `thetao`      | Potential temperature                         | float32   | °C      | Yes         |
+| `so`          | Salinity                                      | float32   | - (PSU) | Yes         |
+| `uo`          | Eastward ocean current velocity               | float32   | m/s     | No          |
+| `vo`          | Northward ocean current velocity              | float32   | m/s     | No          |
+| `zos`         | Sea surface height above geoid                | float32   | m       | Yes         |
+| `siconc`      | Sea ice concentration (over the sea part)     | float32   | -       | Yes         |
+| `sivol`       | Sea ice volume per area (`siconc` × `sithick`) | float32  | m       | No          |
+| `usic`        | `siconc` × eastward sea ice velocity          | float32   | m/s     | No          |
+| `vsic`        | `siconc` × northward sea ice velocity         | float32   | m/s     | No          |
 
-The only time invariant taken from GLORYS12 is the depth of the ocean below the geoid, while the mask has been recomputed as explained below.
+Values are averages over the sea part of each cell. GLORYS12's sea ice thickness and velocity (means over the ice-covered part) are `sivol / siconc`, `usic / siconc` and `vsic / siconc` where `siconc > 0`. The deepest GLORYS12 level (5728 m) is not published: the model never computes it.
 
-| Variable name | Description                        | Data type      | Units |
-|---------------|------------------------------------|----------------|-------|
-| `deptho`      | Depth of the ocean below the geoid | float32 (bool) | m     |
-| `glorys_mask` | GLORYS12 sea/land mask             | int8 (bool)    | -     |
+| Variable name | Description                                            | Data type | Units |
+|---------------|--------------------------------------------------------|-----------|-------|
+| `seafrac`     | Share of the cell where GLORYS12 has a sea cell, per level | float32 | -   |
+| `deptho`      | Mean sea-floor depth, land as 0 (the column's water)   | float32   | m     |
+
+Ocean and sea ice values exist exactly where `seafrac > 0`. Volumes and heat contents are sums of value × `seafrac` × layer thickness × cell area. How these fields are built, and why, is in the [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md).
 
 [^1]: Global Ocean Physics Reanalysis. E.U. Copernicus Marine Service Information (CMEMS). Marine Data Store (MDS). DOI: 10.48670/moi-00021 (Accessed on 10-Oct-2025)
 
 ### Waves
 
-The wave variables are derived from the WAVERYS reanalysis[^2], hence the dataset contains modified E.U. Copernicus Marine Service Information; [DOI: 10.48670/moi-00022](https://doi.org/10.48670/moi-00022).
-
-Ocean waves form the boundary between the ocean and the atmosphere. Accurately describing the physical processes at this ocean–atmosphere boundary allows determining the air–sea fluxes of momentum, sensible and latent heat, among others. Since the wave field plays a key role in these exchange processes, wave models are necessary not only to represent the wave spectrum but also to simulate the interface processes that regulate fluxes across it. Information about the sea state provided by wave models can therefore be explicitly used in studies of air–sea interactions.
-
-For these reasons, as well as other potential uses of the dataset, a core number of physical variables from WAVERYS have been selected. Among them, one can reasonably expect that significant wave height contributes the most to driving ocean circulation, by changing the sea surface roughness length, hence wind stresses. Notice that, to the best knowledge of the authors, there are no publicly available S2S forecasts for wave data. Hence, the inclusion of these variables in the training of an autoregressive model is not advised if working on operational systems targeting those timescales.
-
-| Variable name | Description                                   | Data type | Units | Assimilated |
-|---------------|-----------------------------------------------|-----------|-------|-------------|
-| `swh`         | Spectral significant wave height (`VHM0`)     | float32   | m     | Yes         |
-| `swp`         | Spectral moments (0, 2) wave period (`VTM02`) | float32   | s     | Yes         |
-| `mwd`         | Mean wave direction from (`VMDR`)             | float32   | deg   | Yes         |
-| `usd`         | Stokes drift eastward velocity  (`VSDX`)      | float32   | m/s   | Yes         |
-| `vsd`         | Stokes drift northward velocity (`VSDY`)      | float32   | m/s   | Yes         |
-
-Finally, notice that the bathymetry differs from the one in GLORYS12.
-
-| Variable name    | Description                        | Data type   | Units |
-|------------------|------------------------------------|-------------|-------|
-| `waverys_deptho` | Depth of the ocean below the geoid | float32     | m     |
-| `waverys_mask`   | WAVERYS sea/land mask              | int8 (bool) | -     |
-
-[^2]: Global Ocean Waves Reanalysis. E.U. Copernicus Marine Service Information (CMEMS). Marine Data Store (MDS). DOI: 10.48670/moi-00021 (Accessed on 10-Oct-2025)
+WAVERYS wave variables were part of earlier versions and are no longer included: their sea and ice masks differ from GLORYS12's (no sea north of about 81°N, waves missing where ERA5's ice cover exceeds about 0.3). The findings are kept in the notes on coarsening.
 
 ### Atmospheric
 
@@ -142,14 +122,11 @@ Hydrological variables and their auxiliary data are derived from historical GloF
 
 River runoff is required to compute the freshwater budget of the ocean, along with the evaporation, sea ice, and precipitation. For this reason, ARCO-OCEAN contains the discharge of global rivers (including sediments, chemical and biological material) in the last 24 hours, taken from GloFAS. This value, although not assimilated, is computed by forcing a hydrological model with an atmospheric reanalysis (ERA5). Whether a machine learning model could make use of this information and, for example, remove the contribution of sediments to the volumetric flow rate is still an open research question.
 
-| Variable name | Description                    | Data type | Units | Assimilated |
-|---------------|--------------------------------|-----------|-------|-------------|
-| `dis24`       | Mean discharge in the last 24h | float32   | m^3/s | No          |
+| Variable name   | Description                                                     | Data type | Units | Assimilated |
+|-----------------|-----------------------------------------------------------------|-----------|-------|-------------|
+| `dis24_outlets` | River discharge into the ocean, metres per day over each cell   | float32   | m     | No          |
 
-| Variable name | Description                       | Data type   | Units |
-|---------------|-----------------------------------|-------------|-------|
-| `uparea`      | Upstream area of each river pixel | float32     | m^2   |
-| `glofas_mask` | GloFAS land/sea mask              | int8 (bool) | -     |
+The discharge (GloFAS v5.0, mean of 24 h) is taken at the pits of GloFAS's drainage network (local drain direction 5, from the v4.0 auxiliary data), where rivers end, divided by the area of the cell and regridded conservatively: like a daily precipitation total, and the global total is kept (checked at every step). The discharge of a cell, in m^3/s, is the value × cell area / 86400. The ocean model links the outlets to its coast; pits of basins without an outlet to the sea (Caspian, Lake Chad) are included.
 
 [^6]: Grimaldi, S., Salamon, P., Disperati, J., Zsoter, E., Russo, C., Ramos, A., Carton De Wiart, C., Barnard, C., Hansford, E., Gomes, G., Prudhomme, C. (2022): River discharge and related historical data from the Global Flood Awareness System, v4.0. European Commission, Joint Research Centre (JRC). DOI: 10.24381/cds.a4fdd6b9 (Accessed on 10-Oct-2025)
 
@@ -158,27 +135,14 @@ River runoff is required to compute the freshwater budget of the ocean, along wi
 
 ### Notes on regridding, null values, and masking
 
-One of the post-processing steps of the ARCO-OCEAN dataset is regridding, which requires special care. In particular, problems arising from dealing consistently with missing values (NaNs) and invalid points (e.g., land points) when regridding are peculiar of ocean data, as they have no analogue in weather datasets, and having control over them is crucial.
+All fields are regridded conservatively with `xarray-regrid` ([Schilperoort et al., 2025](https://doi.org/10.5281/zenodo.15176942)), which averages the source cells under each target cell weighted by their overlap.
 
-On the one hand, they contain important information (i.e., about the domain geometry), on the other, uncaught NaNs would propagate and lead to NaN pollution in most machine learning models. Indeed, accelerated tensor manipulation libraries used to implement these models can't usually skip NaNs in calculations as Numpy does.
+- Ocean fields: averages over the sea part of each cell. A cell is sea (has values) where `seafrac > 0`, i.e. where GLORYS12 has some sea cell: GLORYS12's 3D mask regridded is `seafrac`, so the domain is static and every regridded value has a cell. The few sea cells where GLORYS12 has no value (its gaps, the same every day) take the nearest value above in the same column, or 0 if none.
+- Sea ice: averages over the sea part, no ice as 0 (section above).
+- River discharge: a flux per unit area, regridded with missing values as 0.
+- ERA5: the `land_sea_mask`, renamed `lsm`, is the fraction of land in each cell.
 
-In most applications, conservative regridding (i.e., preserving the integral of the source field between grids) is the go-to choice for continuous scalar fields. Notice that WeatherBench datasets use first order conservative regridding also for vector fields, and so has been done in ARCO-OCEAN. The regridding routine is implemented using the `xarray-regrid` Python package ([Schilperoort et al., 2025](https://doi.org/10.5281/zenodo.15176942)), which is based on the `conservative_normed` method provided by `xESMF` ([Zhuang et al., 2025](https://doi.org/10.5281/zenodo.15304267)) plus [minor modifications suggested by Stephan Hoyer](https://github.com/xarray-contrib/xarray-regrid/blob/eef312a2ee0fa5cae94814d72f17438f77ec9e5b/src/xarray_regrid/methods/conservative.py#L49-L54).
-
-The `conservative_normed` algorithm relies on computing overlapping areas between cells of the source and destination grid, then normalizing the target grid values by the fraction of source grid cells actually containing a value. This allows handling missing values (NaNs) without adding excessive overhead. However, it can happen that the destination grid cell does not overlap with any valid source grid cell. These divisions by zero are usually not a problem, as in that case the target grid would contain a NaN anyway.
-
-Nearest-neighbor interpolation is usually the right choice for categorical variables, as is the case for land/sea masking, where using other interpolation algorithms would imply the choice of some arbitrary threshold value. This, together with previous considerations on the `conservative_normed` algorithm imply that in general there will be land points in the target grid with assigned not-null values, which is not a problem as they can be masked out later. However, it also means that sea grid cells might contain null values.
-
-The situation described relates to a single source dataset and a 2D mask. When working with multiple datasets, the situation is even more complex, as they might use a different definition of coastline, or exclude smaller islands, for example. For such reasons, the following approach was used in producing the ARCO-OCEAN dataset:
-
-1. Each dataset includes his own land mask. In the case of ERA5, the associated variable is called `land_sea_mask` keeping the name used in the WeatherBench dataset. For all the other datasets, the mask is computed from auxiliary data and the variables is named `<name of the dataset>_mask`.
-2. Masks related to atmospheric or hydrological variables use the convention of assigning `True` to land and `False` to sea, ocean and wave variables do the other way around.
-3. The ERA5 `land_sea_mask` is taken as-is from the original dataset, just renamed to `lsm`. Technically, it is not a mask as its values vary continuously between 0 and 1. The other masks are computed from auxiliary data (which are also included in ARCO-OCEAN). In particular, the `glofas_mask` is true where the `uparea` variable is not null, the `waverys_mask` where the `deptho` variable (from the WAVERYS dataset) is not null. The `glorys_mask` derivation is more involved, and is the subject of the following paragraph.
-
-For `glorys12_mask`, we avoid the problem of regridding the original mask, and compute a new mask from a given discretization of the vertical dimension and suitable bathymetry, which is a continuous field and can be eventually regridded. A cell is considered valid, hence a sea point, if half of its volume is filled with water, i.e., if the bathymetry at that point is below the cell center. The bathymetry has been taken from the `deptho` variable defined in GLORYS12, and has been regridded using a conservative algorithm to 0.25°. The depth coordinate has been subsampled to 10 levels, as described in the paragraph on ocean and sea ice variables.
-
-The illustrated procedure does not solve the problem of valid cells containing missing values, though. To solve it, we used a filling routine averaging the values of surrounding cells. This is reminiscent of the approach followed by GraphCast ([Lam et al., 2023](https://doi.org/10.1126/science.adi2336)) to deal with random cases of NaNs in ERA5. To speed up the computation in Python, we computed such averages by means of Gauss blurring, corrected to take missing values into account in the same way as in the `conservative_normed` algorithm. The implementation makes use of `scipy.ndimage.gaussian_filter` (see [documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html) for more details), with parameters `mode=mirror`, `radius=4` and `sigma=1.0`. This approach was used for the variables `so`, `thetao`, `vo`, `mlotst`, and `zos` in GLORYS12, and for `dis24` in GloFAS.
-
-Finally, it is worth noting that in GLORYS12 sea ice variables are null on most of the domain, as they are represented using NaNs where the sea ice is absent. Henceforth, variables `usi`, `vsi`, `sithick`, and `siconc` are simply set to zero within `glorys_mask` and leaved to their original values elsewhere.
+The [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md) explain these choices, with measurements at 0.25°, 0.5° and 1°: which coarse cells to call sea, how the water of each layer is kept, how gaps are filled, sea ice and river discharge.
 
 ## Data format
 
