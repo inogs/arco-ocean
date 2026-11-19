@@ -424,6 +424,7 @@ comment = "GLORYS12 deptho averaged conservatively over the cell, land as 0: the
 standard_name = "sea_ice_area_fraction"
 long_name = "sea-ice concentration"
 units = "1"
+cell_methods = "area: mean where sea"
 comment = "Ice area over the cell's sea area (GLORYS12 siconc, no ice as 0)."
 
 [postprocess.sivol]
@@ -436,11 +437,13 @@ comment = "GLORYS12 siconc x sithick averaged over the cell's sea part. GLORYS12
 [postprocess.usic]
 long_name = "sea-ice concentration times eastward velocity"
 units = "m s-1"
+cell_methods = "area: mean where sea"
 comment = "GLORYS12 siconc x usi averaged over the cell's sea part. The ice velocity (mean over the ice) is usic / siconc where siconc > 0."
 
 [postprocess.vsic]
 long_name = "sea-ice concentration times northward velocity"
 units = "m s-1"
+cell_methods = "area: mean where sea"
 comment = "GLORYS12 siconc x vsi averaged over the cell's sea part. The ice velocity (mean over the ice) is vsic / siconc where siconc > 0."
 
 [postprocess.dis24_outlets]
