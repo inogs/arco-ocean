@@ -603,6 +603,22 @@ featureType = "grid"
 name = "coverage_attrs"
 vertical_dim = "depth"
 
+# Checked on each block before its commit: a block that fails is not committed, and the run
+# can resume once the cause is fixed. `arco-make validate` checks a whole output.
+[checks.valid_time_coordinate]
+freq = "1D"
+
+[checks.valid_global_ecmwf_coordinates]
+latitude_dim = "lat"
+longitude_dim = "lon"
+
+# Ocean and sea-ice fields exactly inside the sea; every other variable everywhere.
+[checks.ensure_no_nans]
+exact = true
+seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[checks.attributes]
+
 [save]
 # Versions kept: the current one and the previous one (to go back once).
 keep_versions = 2
