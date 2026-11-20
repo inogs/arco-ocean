@@ -65,8 +65,11 @@ Values are averages over the sea part of each cell. GLORYS12's sea ice thickness
 |---------------|--------------------------------------------------------|-----------|-------|
 | `seafrac`     | Share of the cell where GLORYS12 has a sea cell, per level | float32 | -   |
 | `deptho`      | Mean sea-floor depth, land as 0 (the column's water)   | float32   | m     |
+| `areacello`   | Cell area, on GLORYS12's sphere (radius 6,378,100 m)   | float32   | m²    |
+| `volcello`    | Sea water volume of the cell: `seafrac` × layer thickness × `areacello` | float32 | m³ |
+| `lat_bnds`, `lon_bnds`, `depth_bnds` | CF cell bounds (depth: GLORYS12's layer faces) | float32 | ° / m |
 
-Ocean and sea ice values exist exactly where `seafrac > 0`. Volumes and heat contents are sums of value × `seafrac` × layer thickness × cell area. How these fields are built, and why, is in the [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md).
+Ocean and sea ice values exist exactly where `seafrac > 0`. Volumes and heat contents are sums of value × `volcello`; areas and river totals use `areacello` (discharge in m³/s = `dis24_outlets` × `areacello` / 86400). The variables name these weights in `cell_measures`. How these fields are built, and why, is in the [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md).
 
 [^1]: Global Ocean Physics Reanalysis. E.U. Copernicus Marine Service Information (CMEMS). Marine Data Store (MDS). DOI: 10.48670/moi-00021 (Accessed on 10-Oct-2025)
 
