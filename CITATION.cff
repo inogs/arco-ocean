@@ -45,9 +45,10 @@ repository-code: 'https://github.com/inogs/arco-ocean'
 repository-artifact: 'https://registry.opendata.aws/ogs-arco-ocean/'
 abstract: >-
   ARCO-OCEAN is an analysis-ready cloud-optimized dataset
-  providing physical properties of the ocean, waves, and sea
-  ice for a period of about 28 years between the 1st of
-  January 1993 and the 30th of June 2021. The dataset
+  providing physical properties of the ocean and sea ice,
+  at 0.25, 0.5 and 1 degree, from the 1st of January 1993
+  to the 30th of June 2026 (extended as the sources grow;
+  the first version, to June 2021, also had waves). The dataset
   includes also atmospheric and hydrological variables that
   would be needed as boundary conditions and used to drive a
   numerical simulation. The dataset is the result of

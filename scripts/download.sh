@@ -4,12 +4,14 @@
 #
 # Download one ARCO-OCEAN dataset with arco-make, in one resumable run.
 #
-# The whole time range of the recipe (or --start/--end) is written to one Icechunk repository,
-# block after block, each block a commit on the run's own branch; the repository's `main` moves
-# to the new version only when every block is written. If the run fails, it is attempted again
-# with `arco-make download --resume`, which keeps the blocks already committed and writes the
-# others (up to --attempts runs in all). Transient network errors are already retried inside
-# arco-make, block by block (the recipe's [retries]).
+# The recipes have no dates: [--start, --end) is written to one Icechunk repository, or, with
+# --extend, the days after the repository's last up to --end. Block after block, each block a
+# commit on the run's own branch; the repository's `main` moves to the new version only when
+# every block is written. If the run fails, it is attempted again with `arco-make download
+# --resume` (`--extend --resume` for an extension), which keeps the blocks already committed and
+# writes the others (up to --attempts runs in all). Transient network errors are already retried
+# inside arco-make, block by block (the recipe's [retries]). It needs arco-make with `--extend`
+# and recipes without dates: an image built after the arco-make stack is merged.
 
 usage() {
     cat <<EOF
@@ -223,12 +225,12 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
     echo "Run ${attempt} failed (exit code ${STATUS}): see ${LOG_FILE}."
     # A failed check of the recipe's [checks] fails again on the same data: no further attempt.
     if tail -n "+$((RUN_START + 1))" "${LOG_FILE}" | grep -q "A check of \[checks\] failed"; then
-        echo "A check of the recipe failed (see the log): fix the cause, then rerun with --resume." >&2
+        echo "A check of the recipe failed (see the log): fix the cause, then rerun this command with --resume." >&2
         exit 1
     fi
     if [[ ${attempt} -lt ${ATTEMPTS} ]]; then
         sleep "${RETRY_DELAY}"
     fi
 done
-echo "Download of ${NAME} failed after ${ATTEMPTS} runs: rerun with --resume to continue." >&2
+echo "Download of ${NAME} failed after ${ATTEMPTS} runs (see ${LOG_FILE}): rerun this command with --resume to continue, if the log shows a run waiting." >&2
 exit 1
