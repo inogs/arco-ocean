@@ -31,8 +31,10 @@ DESCRIPTION
         --output PATH           Output repository: a directory, s3:// or gs:// URL (default:
                                 \$DATA_ROOT/data/<product>/res=<res>, from the recipe name).
         --log-dir DIR           Where to write the log (default: \${PROJECT_ROOT}/logs/download).
-        --start DATE            Override the recipe's start (YYYY-MM-DD).
-        --end DATE              Override the recipe's end (YYYY-MM-DD).
+        --start DATE            First day (YYYY-MM-DD): the recipes have no dates. Not with --extend.
+        --end DATE              The day after the last (YYYY-MM-DD). Required.
+        --extend                Append the days after the output's last, up to --end, as a new
+                                version (arco-make --extend; resumed with --resume).
         --replace               Write a new version of an existing output (arco-make --replace).
         --resume                Continue a run that failed earlier (arco-make --resume).
         --attempts N            Runs in all, the later ones resuming (default: 3).
@@ -43,6 +45,10 @@ DESCRIPTION
         --bind SRC[:DST[:OPTS]] Path to bind within the Apptainer container (repeatable).
         --log-level LEVEL       debug, info, warning, error or critical (default: info).
         -h, --help              Show this help.
+
+    Examples:
+        $0 --start 1993-01-01 --end 2026-07-01 historical_res-0p25
+        $0 --extend --end 2026-08-01 historical_res-0p25
 EOF
 }
 
@@ -54,6 +60,7 @@ START_DATE=""
 END_DATE=""
 REPLACE=false
 RESUME=false
+EXTEND=false
 ATTEMPTS=3
 RETRY_DELAY=60
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
@@ -78,6 +85,7 @@ while [[ $# -gt 0 ]]; do
         --end) END_DATE="$2"; shift 2 ;;
         --end=*) END_DATE="${1#*=}"; shift ;;
         --replace) REPLACE=true; shift ;;
+        --extend) EXTEND=true; shift ;;
         --resume) RESUME=true; shift ;;
         --attempts) ATTEMPTS="$2"; shift 2 ;;
         --attempts=*) ATTEMPTS="${1#*=}"; shift ;;
@@ -104,6 +112,18 @@ RECIPE="${POSITIONAL_ARGS[0]:-}"
 if [[ -z "${RECIPE}" || ${#POSITIONAL_ARGS[@]} -gt 1 ]]; then
     echo "Error: give exactly one RECIPE." >&2
     usage >&2
+    exit 1
+fi
+if [[ -z "${END_DATE}" ]]; then
+    echo "Error: give --end (the recipes have no dates)." >&2
+    exit 1
+fi
+if [[ "${EXTEND}" == true && ( -n "${START_DATE}" || "${REPLACE}" == true ) ]]; then
+    echo "Error: --extend starts the day after the output's last: not with --start nor --replace." >&2
+    exit 1
+fi
+if [[ "${EXTEND}" == false && -z "${START_DATE}" ]]; then
+    echo "Error: give --start (the recipes have no dates), or --extend an existing output." >&2
     exit 1
 fi
 if [[ "${REPLACE}" == true && "${RESUME}" == true ]]; then
@@ -181,10 +201,13 @@ FLAGS=(--no-progress --log-level="${LOG_LEVEL}")
 echo "Download of ${NAME} to ${OUTPUT}, log: ${LOG_FILE} (started $(date -u), PID $$, host $(hostname))"
 for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
     MODE=()
+    if [[ "${EXTEND}" == true ]]; then
+        MODE+=(--extend)
+    fi
     if [[ ${attempt} -gt 1 || "${RESUME}" == true ]]; then
-        MODE=(--resume)
+        MODE+=(--resume)
     elif [[ "${REPLACE}" == true ]]; then
-        MODE=(--replace)
+        MODE+=(--replace)
     fi
     echo "Run ${attempt}/${ATTEMPTS} ${MODE[*]+"${MODE[*]}"}"
     RUN_START=$(wc -l < "${LOG_FILE}" 2>/dev/null || echo 0)

@@ -3,11 +3,7 @@
 # Chunks are planned by arco-make for each block (`arco-make download --plan` prints them).
 # The whole download takes a few days: the profile in [save] storage_options must allow that.
 time_dim = "time"
-start = 1993-01-01T00:00:00
-# The last day every source has as final data (20 Nov 2026): ERA5 to 2026-06-30 (later days are
-# preliminary ERA5T, revised within months), GloFAS v5 to 2026-08-31, GLORYS12 to 2026-10-06
-# (its multi-year dataset continues past 2021 under the same id).
-end = 2026-07-01T00:00:00
+# Dates come from the command (--start, --end; --extend appends to an output): see README.
 # 32-day blocks: about 25 s per day of data, memory levels off (arco-make logbook, 18 Nov).
 step = "32D"
 

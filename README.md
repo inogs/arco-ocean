@@ -126,6 +126,22 @@ The [notes on coarsening ocean datasets](https://github.com/stefanocampanella/ar
 
 Every block of the download is checked before it is written: a complete daily time axis, the grid convention, ocean and sea ice values exactly where `seafrac > 0` and every other variable everywhere, and a `long_name` and `units` on every variable, no two variables sharing a `long_name` (`configs/validate/historical.toml` checks a whole dataset the same way).
 
+## Producing and extending the dataset
+
+The recipes have no dates: the command gives them, so one recipe serves the first download and
+every later extension, and the fingerprint of the recipe recorded in each commit stays the same.
+
+```bash
+# The whole period, at one resolution (about three days on the project machine).
+scripts/download.sh --start 1993-01-01 --end 2026-07-01 historical_res-0p25
+# Later: the days after the last stored one, as a new version, once every source has them as
+# final data (ERA5 lags by about three months).
+scripts/download.sh --extend --end 2026-10-01 historical_res-0p25
+```
+
+Each commit of a repository records how it was made, in its metadata: the version and commit of
+arco-make, the versions of the packages that decide the values, and the recipe's fingerprint.
+
 ## Data format
 
 Each resolution is an [Icechunk](https://icechunk.io) repository: a [Zarr version 3](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html) dataset with versions, whose `main` branch is the current one. The dataset has the dimensions `time`, `depth`, `lat` and `lon` (and `bnds`, for the cell bounds), each with its coordinate. The latitudes increase within [-90, 90], and the longitudes are in the range [0, 360), following the [convention used by the ECMWF](https://confluence.ecmwf.int/display/CKB/ERA5%3A+What+is+the+spatial+reference#ERA5:Whatisthespatialreference-Coordinatesystem); the grid's polar rows are centred on the poles and half as tall. The depth coordinate is GLORYS12's level depths. The time coordinate uses the proleptic Gregorian calendar and unit "days since 1993-01-01" (UTC), one stamp per day at 00:00.
