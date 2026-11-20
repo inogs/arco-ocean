@@ -7,6 +7,15 @@ start = 1993-01-01T00:00:00
 end = 2024-01-01T00:00:00
 step = "128D"
 
+# The target grid of every regrid step, named by them.
+[grids.target]
+south = -90.0
+north = 90.0
+west = 0.0
+east = 359.75
+resolution_lat = 0.25
+resolution_lon = 0.25
+
 [[datasets.era5.parts]]
 filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
 engine = "zarr"
@@ -190,7 +199,7 @@ latitude_dim = "latitude"
 longitude_dim = "longitude"
 kwargs = {skipna = false}
 conservation_tolerance = 1e-6
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = "target"
 
 # No river south of GloFAS's domain (-60): 0 there, where the regridding leaves NaN.
 [[datasets.glofas.postprocess]]
@@ -240,7 +249,7 @@ method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
 kwargs = {skipna = true, nan_threshold = 1.0}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = "target"
 
 [[datasets.glorys.postprocess]]
 name = "astype"
@@ -287,7 +296,7 @@ method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
 kwargs = {skipna = false}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = "target"
 
 [[datasets.glorys_seaice.postprocess]]
 name = "astype"
@@ -343,7 +352,7 @@ method = "conservative"
 latitude_dim = "latitude"
 longitude_dim = "longitude"
 kwargs = {skipna = false}
-grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.75, resolution_lat = 0.25, resolution_lon = 0.25}
+grid = "target"
 
 # No sea south of GLORYS's domain (-80): 0 there, where the regridding leaves NaN.
 [[datasets.glorys_static.postprocess]]
