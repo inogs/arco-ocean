@@ -17,12 +17,9 @@ start = 1993-01-01T00:00:00
 end = 2021-07-01T00:00:00
 freq = "1D"
 
+# Ocean and sea-ice fields exactly inside the sea (seafrac > 0): none missing inside, none
+# present outside; every other variable has values everywhere.
 [checks.ensure_no_nans]
 time_dim = "time"
-# Ocean and sea-ice fields inside the sea (seafrac > 0); every other variable everywhere.
-seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
-
-# Values exactly where the static sea fraction is positive: none missing inside, none outside.
-[checks.fraction_domain]
-time_dim = "time"
+exact = true
 seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
