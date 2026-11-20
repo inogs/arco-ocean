@@ -613,26 +613,16 @@ Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
 creator_name = "OGS ARCO-OCEAN Development Team"
 source = "Merged retrospective reanalyses and hindcasts: CMEMS GLORYS12 (ocean & sea ice), ECMWF ERA5 (atmosphere), and GloFAS v5.0 (river discharge)."
-history = "Interpolated from native grids to global 1.0 deg regular grid and written to daily-chunked Zarr format."
+history = "Regridded conservatively from the native grids to a global 1.0 deg regular grid; written as an Icechunk repository (Zarr v3), in chunks of one day and level, sharded by 8 days and all levels."
 license = "CC-BY-4.0"
-attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
+attribution = "Contains modified Copernicus Climate Change Service (C3S) information (ERA5), E.U. Copernicus Marine Service information (CMEMS, GLORYS12) and Copernicus Emergency Management Service (CEMS) information (GloFAS). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
 references = "https://github.com/inogs/arco-ocean"
-geospatial_lat_min = -90.0
-geospatial_lat_max = 90.0
-geospatial_lat_units = "degrees_north"
-geospatial_lat_resolution = "1.0 degree"
-geospatial_lon_min = -180.0
-geospatial_lon_max = 180.0
-geospatial_lon_units = "degrees_east"
-geospatial_lon_resolution = "1.0 degree"
-geospatial_vertical_min = 0.494
-geospatial_vertical_max = 5274.784
-geospatial_vertical_units = "m"
-geospatial_vertical_positive = "down"
-time_coverage_start = "1993-01-01T00:00:00Z"
-time_coverage_end = "2023-12-31T00:00:00Z"
-time_coverage_resolution = "P1D"
 featureType = "grid"
+
+# The extent attributes (ACDD) from the coordinates: the time coverage is the whole output's.
+[[postprocess]]
+name = "coverage_attrs"
+vertical_dim = "depth"
 
 [save]
 # Versions kept: the current one and the previous one (to go back once).
