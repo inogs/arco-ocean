@@ -110,12 +110,14 @@ if [[ "${REPLACE}" == true && "${RESUME}" == true ]]; then
     echo "Error: --replace starts over, --resume continues: give one of them." >&2
     exit 1
 fi
-for value in "${ATTEMPTS}"; do
-    if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
-        echo "Error: --attempts takes a positive integer (got '${value}')." >&2
-        exit 1
-    fi
-done
+if ! [[ "${ATTEMPTS}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: --attempts takes a positive integer (got '${ATTEMPTS}')." >&2
+    exit 1
+fi
+if ! [[ "${RETRY_DELAY}" =~ ^[0-9]+$ ]]; then
+    echo "Error: --retry-delay takes a number of seconds (got '${RETRY_DELAY}')." >&2
+    exit 1
+fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
 cd "${PROJECT_ROOT}" || exit 1
@@ -172,8 +174,6 @@ else
     RUN_CMD=(apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}")
 fi
 
-# Dask chunks of 256 MiB were the fastest (arco-make logbook, 18 Nov); arco-make plans them per block.
-export DASK_ARRAY__CHUNK_SIZE="${DASK_ARRAY__CHUNK_SIZE:-256MiB}"
 FLAGS=(--no-progress --log-level="${LOG_LEVEL}")
 [[ -n "${START_DATE}" ]] && FLAGS+=(--start="${START_DATE}")
 [[ -n "${END_DATE}" ]] && FLAGS+=(--end="${END_DATE}")
@@ -187,6 +187,7 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
         MODE=(--replace)
     fi
     echo "Run ${attempt}/${ATTEMPTS} ${MODE[*]+"${MODE[*]}"}"
+    RUN_START=$(wc -l < "${LOG_FILE}" 2>/dev/null || echo 0)
     {
         echo "==== run ${attempt}/${ATTEMPTS} ${MODE[*]+"${MODE[*]}"} ($(date -u)) ===="
         "${RUN_CMD[@]}" download "${FLAGS[@]}" "${MODE[@]+"${MODE[@]}"}" -- "${CONFIG_PATH}" "${OUTPUT}"
@@ -197,6 +198,11 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
         exit 0
     fi
     echo "Run ${attempt} failed (exit code ${STATUS}): see ${LOG_FILE}."
+    # A failed check of the recipe's [checks] fails again on the same data: no further attempt.
+    if tail -n "+$((RUN_START + 1))" "${LOG_FILE}" | grep -q "A check of \[checks\] failed"; then
+        echo "A check of the recipe failed (see the log): fix the cause, then rerun with --resume." >&2
+        exit 1
+    fi
     if [[ ${attempt} -lt ${ATTEMPTS} ]]; then
         sleep "${RETRY_DELAY}"
     fi
