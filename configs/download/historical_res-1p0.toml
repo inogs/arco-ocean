@@ -161,6 +161,7 @@ names = ["ldd"]
 name = "per_unit_area"
 variables = ["avg_dis"]
 factor = 86400.0
+radius = 6378100.0
 
 [[datasets.glofas.postprocess]]
 name = "regrid"
@@ -296,6 +297,17 @@ dataset_version = "202311"
 dataset_part = "bathy"
 service = "static-arco"
 
+# The layer thicknesses (depth only: regrid passes them through), for the depth bounds and the
+# sea volumes. Its depths differ from the bathymetry's by float32 rounding (at most 0.5 mm).
+[[datasets.glorys_static.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["e3t"]
+dataset_version = "202311"
+dataset_part = "coords"
+service = "static-arco"
+coordinate_tolerance = 0.001
+
 [[datasets.glorys_static.postprocess]]
 name = "isel"
 depth = {start = 0, stop = 49}
@@ -338,6 +350,36 @@ tolerance = 1e-6
 name = "rename_coordinates"
 name_dict = {latitude = "lat", longitude = "lon"}
 
+# Cell geometry: CF bounds (horizontal: the cells conservative regridding assumes; depth: the
+# layers of e3t), the cell areas on GLORYS12's sphere (its static e1t and e2t imply a radius of
+# 6,378,100 m), and the sea volume of each cell.
+[[datasets.glorys_static.postprocess]]
+name = "cell_bounds"
+latitude_dim = "lat"
+longitude_dim = "lon"
+depth_dim = "depth"
+thickness = "e3t"
+
+[[datasets.glorys_static.postprocess]]
+name = "cell_area"
+variable = "areacello"
+latitude_dim = "lat"
+longitude_dim = "lon"
+radius = 6378100.0
+
+[[datasets.glorys_static.postprocess]]
+name = "products"
+volcello = ["seafrac", "e3t", "areacello"]
+
+[[datasets.glorys_static.postprocess]]
+name = "drop_vars"
+names = ["e3t"]
+
+[[datasets.glorys_static.postprocess]]
+name = "astype"
+areacello = {dtype = "float32", casting = "same_kind"}
+volcello = {dtype = "float32", casting = "same_kind"}
+
 [[datasets.glorys_static.postprocess]]
 name = "drop_var_attrs"
 variables = ["depth", "lat", "lon"]
@@ -350,7 +392,7 @@ deep = false
 
 [[postprocess]]
 name = "transpose"
-dims = ["time", "depth", "lat", "lon"]
+dims = ["time", "depth", "lat", "lon", "bnds"]
 
 # Sea ice over the sea part of each cell (2D fields: the surface fraction).
 [[postprocess]]
@@ -389,6 +431,7 @@ long_name = "latitude"
 units = "degrees_north"
 unit_long = "Degrees North"
 axis = "Y"
+bounds = "lat_bnds"
 
 [postprocess.lon]
 standard_name = "longitude"
@@ -396,6 +439,7 @@ long_name = "longitude"
 units = "degrees_east"
 unit_long = "Degrees East"
 axis = "X"
+bounds = "lon_bnds"
 
 [postprocess.time]
 standard_name = "time"
@@ -408,11 +452,12 @@ long_name = "ocean depth below geoid"
 units = "m"
 positive = "down"
 axis = "Z"
+bounds = "depth_bnds"
 
 [postprocess.seafrac]
 long_name = "sea fraction"
 units = "1"
-comment = "Share of the cell's area where GLORYS12 has a sea cell at this level: its 3D mask regridded conservatively. Static. Values exist exactly where seafrac > 0. Volumes and heat contents: sum value x seafrac x layer thickness x cell area."
+comment = "Share of the cell's area where GLORYS12 has a sea cell at this level: its 3D mask regridded conservatively. Static. Values exist exactly where seafrac > 0. Sea volume of the cell: volcello = seafrac x layer thickness (depth_bnds) x areacello."
 
 [postprocess.deptho]
 standard_name = "sea_floor_depth_below_geoid"
@@ -426,6 +471,7 @@ long_name = "Temperature"
 units = "degrees_C"
 unit_long = "Degrees Celsius"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
 
 [postprocess.so]
 standard_name = "sea_water_salinity"
@@ -433,6 +479,7 @@ long_name = "Salinity"
 units = "1e-3"
 unit_long = "Practical Salinity Unit"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
 
 [postprocess.uo]
 standard_name = "eastward_sea_water_velocity"
@@ -440,6 +487,7 @@ long_name = "Eastward velocity"
 units = "m s-1"
 unit_long = "Meters per second"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
 
 [postprocess.vo]
 standard_name = "northward_sea_water_velocity"
@@ -447,6 +495,7 @@ long_name = "Northward velocity"
 units = "m s-1"
 unit_long = "Meters per second"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
 
 [postprocess.zos]
 standard_name = "sea_surface_height_above_geoid"
@@ -454,12 +503,26 @@ long_name = "Sea surface height"
 units = "m"
 unit_long = "Meters"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+
+[postprocess.areacello]
+standard_name = "cell_area"
+long_name = "cell area"
+units = "m2"
+comment = "Area of the whole cell (land included) on a sphere of radius 6,378,100 m, the radius of GLORYS12's static cell sizes (e1t, e2t). The cell's sea area at the surface is seafrac x areacello."
+
+[postprocess.volcello]
+standard_name = "ocean_volume"
+long_name = "sea water volume"
+units = "m3"
+comment = "Sea water volume of the cell: seafrac x layer thickness (depth_bnds, from GLORYS12's e3t) x areacello. Sums of value x volcello are volume integrals (heat content, say); weights of a loss by water volume."
 
 [postprocess.siconc]
 standard_name = "sea_ice_area_fraction"
 long_name = "sea-ice concentration"
 units = "1"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
 comment = "Ice area over the cell's sea area (GLORYS12 siconc, no ice as 0)."
 
 [postprocess.sivol]
@@ -467,23 +530,27 @@ standard_name = "sea_ice_thickness"
 long_name = "sea-ice volume per area"
 units = "m"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
 comment = "GLORYS12 siconc x sithick averaged over the cell's sea part. GLORYS12's thickness (mean over the ice) is sivol / siconc where siconc > 0."
 
 [postprocess.usic]
 long_name = "sea-ice concentration times eastward velocity"
 units = "m s-1"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
 comment = "GLORYS12 siconc x usi averaged over the cell's sea part. The ice velocity (mean over the ice) is usic / siconc where siconc > 0."
 
 [postprocess.vsic]
 long_name = "sea-ice concentration times northward velocity"
 units = "m s-1"
 cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
 comment = "GLORYS12 siconc x vsi averaged over the cell's sea part. The ice velocity (mean over the ice) is vsic / siconc where siconc > 0."
 
 [postprocess.dis24_outlets]
 long_name = "river discharge into the ocean per unit area"
 units = "m"
+cell_measures = "area: areacello"
 comment = "GloFAS v5.0 discharge (mean of 24 h) at the pits of its drainage network (local drain direction 5, LDD v4.0), divided by the cell's area: metres of water per day over the whole cell, as a daily precipitation total. Discharge (m3/s) = value x cell area / 86400. Pits of basins without outlet (Caspian, Lake Chad) are included."
 
 [[postprocess]]
