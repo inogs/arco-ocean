@@ -20,8 +20,6 @@ variables = [
     "10m_v_component_of_wind",
     "2m_dewpoint_temperature",
     "2m_temperature",
-    "geopotential_at_surface",
-    "land_sea_mask",
     "mean_sea_level_pressure"]
 
 [[datasets.era5.postprocess]]
@@ -50,8 +48,6 @@ name = "rename"
 10m_v_component_of_wind = "10v"
 2m_dewpoint_temperature = "2d"
 2m_temperature = "2t"
-geopotential_at_surface = "z"
-land_sea_mask = "lsm"
 mean_sea_level_pressure = "msl"
 
 [[datasets.era5.postprocess]]
@@ -63,6 +59,51 @@ name = "drop_var_attrs"
 variables = ["lat", "lon", "time"]
 
 [[datasets.era5.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Fields constant in time that ERA5 stores as series (geopotential at the surface, land-sea
+# mask): read at one stamp, static (written once, not every day).
+[[datasets.era5_static.parts]]
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+engine = "zarr"
+consolidated = true
+storage_options = {token = "anon"}
+static_time = 2000-01-01T00:00:00
+
+[[datasets.era5_static.postprocess]]
+name = "select_variables"
+variables = [
+    "geopotential_at_surface",
+    "land_sea_mask"]
+
+[[datasets.era5_static.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.era5_static.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+grid = {south = -90.0, north = 90.0, west = 0.0, east = 359.5, resolution_lat = 0.5, resolution_lon = 0.5}
+
+[[datasets.era5_static.postprocess]]
+name = "rename"
+
+[datasets.era5_static.postprocess.name_dict]
+geopotential_at_surface = "z"
+land_sea_mask = "lsm"
+
+[[datasets.era5_static.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.era5_static.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon"]
+
+[[datasets.era5_static.postprocess]]
 name = "drop_attrs"
 deep = false
 

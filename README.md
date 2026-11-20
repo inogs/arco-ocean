@@ -89,7 +89,7 @@ The question regarding which atmospheric variables one should include in the tra
 
 The wind stress, the evaporation, and the latent and sensible heat fluxes can be computed using bulk formulae (for a discussion of their parametrization in NEMO see [Bonino et al., 2022](https://doi.org/10.5194/gmd-15-6873-2022)), starting from the air density and pressure. In turn, the former can be computed from temperature and specific humidity. In particular, we included the dew point temperature at 2 metres above the surface, but not the lowest level of the 3D specific humidity, following the [ECMWF guidelines for computing the surface (2m) specific humidity](https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#heading-Guidelines). Also, precipitations, wind gusts and variables relevant for radiative transfers were included.
 
-The temporal resolution of the ARCO-ERA5 dataset is 1 hour; therefore, it had to be resampled at a daily resolution. This means that all variables should be intended as averages over the time interval of 24 hours, including, for example, the instantaneous wind gusts.
+The temporal resolution of the ARCO-ERA5 dataset is 1 hour; therefore, it had to be resampled at a daily resolution. This means that all variables should be intended as averages over the time interval of 24 hours, including, for example, the instantaneous wind gusts, apart from the time invariants `z` and `lsm` (below).
 
 The total precipitation in the dataset comprises both rainfall and snowfall, and is obtained from the variable `total_precipitation` in the ARCO-ERA5 dataset, which contains the accumulated value in the last hour. After resampling its value has been rescaled to the total precipitation in the previous day (by multiplying by 24 hours, after averaging). Similar considerations apply to solar and terrestrial radiation variables, which contain accumulated values.
 
@@ -105,19 +105,18 @@ The total precipitation in the dataset comprises both rainfall and snowfall, and
 | `10v`         | Northward wind velocity at 10m                     | float32   | m/s   | Yes         |
 | `i10fg`       | Maximum wind gust at 10m at specified time         | float32   | m/s   | No          |
 
-Time invariants are taken from one of the publicly available datasets at this Google Cloud bucket: [gs://weatherbench2/datasets](https://console.cloud.google.com/storage/browser/weatherbench2/datasets) and part of WeatherBench2 [^5]
+Time invariants are read from the same ARCO-ERA5 store at one stamp, 2000-01-01 00:00, and stored once, without the time dimension. ERA5 stores them as hourly series of the same values (identical on 1993-01-01, 2000-01-01, 2010-07-01 and 2021-06-30), except `z` from 2022-10-01 on, which differs at the two polar rows. The climatology and the anomaly standard deviation leave them out, with the other static variables.
 
-| Variable name | Description                                             | Data type | Units   |
-|---------------|---------------------------------------------------------|-----------|---------|
-| `z`           | Gravitational potential energy per unit mass at surface | float32   | m^2/s^2 |
-| `lsm`         | Fraction of land in a grid cell                         | float32   | -       |
+| Variable name | Description                                                      | Data type | Units   |
+|---------------|------------------------------------------------------------------|-----------|---------|
+| `z`           | Gravitational potential energy per unit mass at surface (static) | float32   | m^2/s^2 |
+| `lsm`         | Fraction of land in a grid cell (static)                         | float32   | -       |
 
 [^3]: Carver, Robert W, and Merose, Alex. (2023): ARCO-ERA5: An Analysis-Ready Cloud-Optimized Reanalysis Dataset.
 22nd Conf. on AI for Env. Science, Denver, CO, Amer. Meteo. Soc, 4A.1, [https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842](https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842)
 
 [^4]: Copernicus Climate Change Service, Climate Data Store, (2023): ERA5 hourly data on single levels from 1940 to present. Copernicus Climate Change Service (C3S) Climate Data Store (CDS). DOI: 10.24381/cds.adbb2d47 (Accessed on 10-Oct-2025)
 
-[^5]: Rasp, S. et al. WeatherBench 2: A benchmark for the next generation of data-driven global weather models. Preprint at https://doi.org/10.48550/arXiv.2308.15560 (2024).
 
 ### Hydrological
 
@@ -143,7 +142,7 @@ All fields are regridded conservatively with `xarray-regrid` ([Schilperoort et a
 - Ocean fields: averages over the sea part of each cell. A cell is sea (has values) where `seafrac > 0`, i.e. where GLORYS12 has some sea cell: GLORYS12's 3D mask regridded is `seafrac`, so the domain is static and every regridded value has a cell. The few sea cells where GLORYS12 has no value (its gaps, the same every day) take the nearest value above in the same column, or 0 if none.
 - Sea ice: averages over the sea part, no ice as 0 (section above).
 - River discharge: a flux per unit area, regridded with missing values as 0.
-- ERA5: the `land_sea_mask`, renamed `lsm`, is the fraction of land in each cell.
+- ERA5: the `land_sea_mask`, renamed `lsm`, is the fraction of land in each cell. `z` and `lsm` are constant in ERA5, which stores them as series: they are read at one stamp and stored once, without the time dimension.
 
 The [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md) explain these choices, with measurements at 0.25°, 0.5° and 1°: which coarse cells to call sea, how the water of each layer is kept, how gaps are filled, sea ice and river discharge.
 
