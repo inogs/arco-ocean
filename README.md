@@ -132,7 +132,7 @@ Each resolution is an [Icechunk](https://icechunk.io) repository: a [Zarr versio
 
 Variables are single precision floating point numbers, stored with time as the leading (slowest varying) dimension, followed by depth (when present), then latitude, and finally longitude. A chunk is one day and one level of a variable over the whole grid; chunks are grouped in shards of 8 days and all levels, a day's levels next to each other, so a whole profile of a day is read in a few requests. Chunks are compressed with Blosc (LZ4, level 1, byte shuffle). Static variables (`seafrac`, `deptho`, the cell measures, `z`, `lsm`) have no time dimension.
 
-The statistics (the climatology and the anomaly standard deviation, from `scripts/climatology.sh`, and a time mean, from `configs/stats/mean.toml`) are computed over the reference period 1993-2018: later years are held out for evaluation and do not enter the normalization.
+The statistics (the climatology and the anomaly standard deviation, from `scripts/climatology.sh`) are computed over the reference period 1993-2018: later years are held out for evaluation and do not enter the normalization.
 
 The climatology and the anomaly standard deviation have 365 bins along `time`, the days of a 365-day year (0 = Jan 1). Feb 29 values are pooled with Feb 28 (bin 58), and the later days of leap years use the bin of the same date: to index them, take the day of year minus 1, and minus 1 more after Feb 29 in leap years. Each bin is smoothed with a Gaussian window of 29 days (scale 7 days), counting only the values present.
 
