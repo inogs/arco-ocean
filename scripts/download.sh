@@ -35,7 +35,6 @@ DESCRIPTION
         --end DATE              Override the recipe's end (YYYY-MM-DD).
         --replace               Write a new version of an existing output (arco-make --replace).
         --resume                Continue a run that failed earlier (arco-make --resume).
-        --blocks N              Blocks read and processed at once (arco-make --blocks; default: 1).
         --attempts N            Runs in all, the later ones resuming (default: 3).
         --retry-delay SECONDS   Wait between runs (default: 60).
         --image IMAGE           Apptainer image (default: oras://ghcr.io/stefanocampanella/arco-make:latest).
@@ -55,7 +54,6 @@ START_DATE=""
 END_DATE=""
 REPLACE=false
 RESUME=false
-BLOCKS=1
 ATTEMPTS=3
 RETRY_DELAY=60
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
@@ -81,8 +79,6 @@ while [[ $# -gt 0 ]]; do
         --end=*) END_DATE="${1#*=}"; shift ;;
         --replace) REPLACE=true; shift ;;
         --resume) RESUME=true; shift ;;
-        --blocks) BLOCKS="$2"; shift 2 ;;
-        --blocks=*) BLOCKS="${1#*=}"; shift ;;
         --attempts) ATTEMPTS="$2"; shift 2 ;;
         --attempts=*) ATTEMPTS="${1#*=}"; shift ;;
         --retry-delay) RETRY_DELAY="$2"; shift 2 ;;
@@ -114,9 +110,9 @@ if [[ "${REPLACE}" == true && "${RESUME}" == true ]]; then
     echo "Error: --replace starts over, --resume continues: give one of them." >&2
     exit 1
 fi
-for value in "${BLOCKS}" "${ATTEMPTS}"; do
+for value in "${ATTEMPTS}"; do
     if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
-        echo "Error: --blocks and --attempts take a positive integer (got '${value}')." >&2
+        echo "Error: --attempts takes a positive integer (got '${value}')." >&2
         exit 1
     fi
 done
@@ -176,7 +172,9 @@ else
     RUN_CMD=(apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}")
 fi
 
-FLAGS=(--no-progress --log-level="${LOG_LEVEL}" --blocks="${BLOCKS}")
+# Dask chunks of 256 MiB were the fastest (arco-make logbook, 18 Nov); arco-make plans them per block.
+export DASK_ARRAY__CHUNK_SIZE="${DASK_ARRAY__CHUNK_SIZE:-256MiB}"
+FLAGS=(--no-progress --log-level="${LOG_LEVEL}")
 [[ -n "${START_DATE}" ]] && FLAGS+=(--start="${START_DATE}")
 [[ -n "${END_DATE}" ]] && FLAGS+=(--end="${END_DATE}")
 
