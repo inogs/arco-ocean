@@ -5,7 +5,8 @@
 time_dim = "time"
 start = 1993-01-01T00:00:00
 end = 2024-01-01T00:00:00
-step = "128D"
+# 32-day blocks: about 25 s per day of data, memory levels off (arco-make logbook, 18 Nov).
+step = "32D"
 
 # The target grid of every regrid step, named by them.
 [grids.target]
@@ -637,6 +638,10 @@ featureType = "grid"
 # Versions kept: the current one and the previous one (to go back once).
 keep_versions = 2
 chunks = {time = 1, depth = 1, lat = -1, lon = -1}
+# Shards of 8 days and all levels, a day's levels next to each other: about 120 objects per
+# 32-day block instead of 7,200 (arco-make logbook, 18 Nov).
+shards = {time = 8, depth = -1, lat = -1, lon = -1}
+shard_order = "lexicographic"
 compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
 
 [save.encoding.time]
