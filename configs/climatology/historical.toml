@@ -39,28 +39,22 @@ id = "https://doi.org/10.5281/zenodo.17751760"
 Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
 creator_name = "OGS ARCO-OCEAN Development Team"
-source = "Derived from ARCO-OCEAN v1.0 (DOI: 10.5281/zenodo.17751760)"
-history = "Interpolated from native grids to global 0.25 deg regular grid and written to daily-chunked Zarr format. Multi-year daily mean calculated across 1993–2018 using gaussian smoothing."
+source = "Derived from the ARCO-OCEAN historical dataset at the same resolution (DOI: 10.5281/zenodo.17751760)"
+history = "Multi-year daily mean of the ARCO-OCEAN historical dataset over 1993–2018, with gaussian smoothing; written as an Icechunk repository (Zarr v3), in chunks of one bin and level, sharded by 8 bins and all levels."
 license = "CC-BY-4.0"
-attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
+attribution = "Contains modified Copernicus Climate Change Service (C3S) information (ERA5), E.U. Copernicus Marine Service information (CMEMS, GLORYS12) and Copernicus Emergency Management Service (CEMS) information (GloFAS). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
 references = "https://github.com/inogs/arco-ocean"
-geospatial_lat_min = -90.0
-geospatial_lat_max = 90.0
-geospatial_lat_units = "degrees_north"
-geospatial_lat_resolution = "0.25 degree"
-geospatial_lon_min = -180.0
-geospatial_lon_max = 180.0
-geospatial_lon_units = "degrees_east"
-geospatial_lon_resolution = "0.25 degree"
-geospatial_vertical_min = 0.494
-geospatial_vertical_max = 5727.917
-geospatial_vertical_units = "m"
-geospatial_vertical_positive = "down"
 time_coverage_start = "1993-01-01T00:00:00Z"
 time_coverage_end = "2018-12-31T00:00:00Z"
 time_coverage_resolution = "P1D"
 climatology_base_period = "1993 - 2018"
 featureType = "grid"
+
+# The spatial extent (ACDD) from the coordinates; the time coverage above is the reference period.
+[[postprocess_climatology]]
+name = "coverage_attrs"
+vertical_dim = "depth"
+time_dim = false
 
 # Applied to the computed anomaly standard deviation dataset
 [[postprocess_anomaly_std]]
@@ -78,32 +72,28 @@ id = "https://doi.org/10.5281/zenodo.17751760"
 Conventions = "CF-1.8, ACDD-1.3"
 institution = "National Institute of Oceanography and Applied Geophysics - OGS"
 creator_name = "OGS ARCO-OCEAN Development Team"
-source = "Derived from ARCO-OCEAN v1.0 (DOI: 10.5281/zenodo.17751760)"
-history = "Interpolated from native grids to global 0.25 deg regular grid and written to daily-chunked Zarr format. Multi-year daily anomaly standard deviations calculated across 1993–2018 using gaussian smoothing."
+source = "Derived from the ARCO-OCEAN historical dataset at the same resolution (DOI: 10.5281/zenodo.17751760)"
+history = "Multi-year daily anomaly standard deviations of the ARCO-OCEAN historical dataset over 1993–2018, with gaussian smoothing; written as an Icechunk repository (Zarr v3), in chunks of one bin and level, sharded by 8 bins and all levels."
 license = "CC-BY-4.0"
-attribution = "Contains modified Copernicus Climate Change Service (C3S) and Copernicus Marine Environment Monitoring Service (CMEMS) information."
+attribution = "Contains modified Copernicus Climate Change Service (C3S) information (ERA5), E.U. Copernicus Marine Service information (CMEMS, GLORYS12) and Copernicus Emergency Management Service (CEMS) information (GloFAS). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
 references = "https://github.com/inogs/arco-ocean"
-geospatial_lat_min = -90.0
-geospatial_lat_max = 90.0
-geospatial_lat_units = "degrees_north"
-geospatial_lat_resolution = "0.25 degree"
-geospatial_lon_min = -180.0
-geospatial_lon_max = 180.0
-geospatial_lon_units = "degrees_east"
-geospatial_lon_resolution = "0.25 degree"
-geospatial_vertical_min = 0.494
-geospatial_vertical_max = 5727.917
-geospatial_vertical_units = "m"
-geospatial_vertical_positive = "down"
 time_coverage_start = "1993-01-01T00:00:00Z"
 time_coverage_end = "2018-12-31T00:00:00Z"
 time_coverage_resolution = "P1D"
 climatology_base_period = "1993 - 2018"
 featureType = "grid"
 
+[[postprocess_anomaly_std]]
+name = "coverage_attrs"
+vertical_dim = "depth"
+time_dim = false
+
 # ==== SAVING CONFIGURATION ====
 [save]
 # Versions kept: the current one (statistics can be recomputed).
 keep_versions = 1
 chunks = {time = 1, depth = 1, lat = -1, lon = -1}
+# The layout of the historical datasets: shards of 8 bins and all levels, a bin's levels together.
+shards = {time = 8, depth = -1, lat = -1, lon = -1}
+shard_order = "lexicographic"
 compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
