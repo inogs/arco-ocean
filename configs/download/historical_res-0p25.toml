@@ -4,7 +4,8 @@
 # The whole download takes a few days: the profile in [save] storage_options must allow that.
 time_dim = "time"
 start = 1993-01-01T00:00:00
-end = 2024-01-01T00:00:00
+# GLORYS12's multi-year product ends on 2021-06-30 (its interim product continues it).
+end = 2021-07-01T00:00:00
 # 32-day blocks: about 25 s per day of data, memory levels off (arco-make logbook, 18 Nov).
 step = "32D"
 
