@@ -46,7 +46,7 @@ name = "rename"
 2m_temperature = "2t"
 geopotential_at_surface = "z"
 land_sea_mask = "lsm"
-mean_sea_level_pressure = "msl"
+mean_sea_level_pressure = "mslp"
 
 [[datasets.era5.postprocess]]
 name = "rename_coordinates"

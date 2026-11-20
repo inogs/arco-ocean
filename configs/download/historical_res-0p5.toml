@@ -48,7 +48,7 @@ name = "rename"
 10m_v_component_of_wind = "10v"
 2m_dewpoint_temperature = "2d"
 2m_temperature = "2t"
-mean_sea_level_pressure = "msl"
+mean_sea_level_pressure = "mslp"
 
 [[datasets.era5.postprocess]]
 name = "rename_coordinates"
