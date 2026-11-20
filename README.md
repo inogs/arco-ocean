@@ -124,7 +124,7 @@ All fields are regridded conservatively with `xarray-regrid` ([Schilperoort et a
 
 The [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md) explain these choices, with measurements at 0.25°, 0.5° and 1°: which coarse cells to call sea, how the water of each layer is kept, how gaps are filled, sea ice and river discharge.
 
-Every block of the download is checked before it is written: a complete daily time axis, the grid convention, ocean and sea ice values exactly where `seafrac > 0` and every other variable everywhere, and a distinct `long_name` and `units` on every variable (`configs/validate/historical.toml` checks a whole dataset the same way).
+Every block of the download is checked before it is written: a complete daily time axis, the grid convention, ocean and sea ice values exactly where `seafrac > 0` and every other variable everywhere, and a `long_name` and `units` on every variable, no two variables sharing a `long_name` (`configs/validate/historical.toml` checks a whole dataset the same way).
 
 ## Data format
 
@@ -132,7 +132,7 @@ Each resolution is an [Icechunk](https://icechunk.io) repository: a [Zarr versio
 
 Variables are single precision floating point numbers, stored with time as the leading (slowest varying) dimension, followed by depth (when present), then latitude, and finally longitude. A chunk is one day and one level of a variable over the whole grid; chunks are grouped in shards of 8 days and all levels, a day's levels next to each other, so a whole profile of a day is read in a few requests. Chunks are compressed with Blosc (LZ4, level 1, byte shuffle). Static variables (`seafrac`, `deptho`, the cell measures, `z`, `lsm`) have no time dimension.
 
-The statistics (climatology, anomaly standard deviation, mean) are computed over the reference period 1993-2018: later years are held out for evaluation and do not enter the normalization.
+The statistics (the climatology and the anomaly standard deviation, from `scripts/climatology.sh`, and a time mean, from `configs/stats/mean.toml`) are computed over the reference period 1993-2018: later years are held out for evaluation and do not enter the normalization.
 
 The climatology and the anomaly standard deviation have 365 bins along `time`, the days of a 365-day year (0 = Jan 1). Feb 29 values are pooled with Feb 28 (bin 58), and the later days of leap years use the bin of the same date: to index them, take the day of year minus 1, and minus 1 more after Feb 29 in leap years. Each bin is smoothed with a Gaussian window of 29 days (scale 7 days), counting only the values present.
 
@@ -158,13 +158,13 @@ repo = icechunk.Repository.open(storage)
 dataset = xr.open_zarr(repo.readonly_session("main").store, consolidated=False)
 ```
 
-Earlier versions of a repository remain readable for a while: `repo.ancestry(branch="main")` lists them, and `repo.readonly_session(snapshot_id=...)` opens one.
+A download writes its blocks one commit at a time on a branch of its own, and `main` moves to the last of them only once the run is complete: `main` is always a whole version. The previous version is kept for a while (the recipes' `keep_versions = 2`); `main`'s history also lists the commits of single blocks, which are not whole versions.
 
 The first version of ARCO-OCEAN (0.25°, 10 levels, waves, Zarr version 2) stays in the bucket until the new one replaces it; its description is in this repository's history.
 
 ## Tutorials
 
-1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.ipynb)
+1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.ipynb) (written for the first version: its paths and variables are those of the 0.25°, 10-level dataset)
 
 ## License
 
