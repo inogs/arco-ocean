@@ -5,8 +5,8 @@
 # Compute the climatology and the anomaly standard deviation of one ARCO-OCEAN dataset with
 # arco-make, on one machine (the project VM).
 #
-# Reads the dataset <product>/res=<res> and writes climatology/res=<res> and
-# anomaly-std/res=<res> (Icechunk repositories), from a recipe named <product>_res-<res>.
+# Reads the dataset <product>/res=<res> and writes statistics/res=<res>, one Icechunk repository
+# with the groups climatology and anomaly_std, from a recipe named <product>_res-<res>.
 
 usage() {
     cat <<EOF
@@ -26,10 +26,11 @@ DESCRIPTION
         --project-dir DIR       Project root directory (default: current working directory).
         --config-dir DIR        Where to look for recipes (default: \${PROJECT_ROOT}/configs/climatology).
         --input PATH            Input dataset (default: \$DATA_ROOT/data/<product>/res=<res>).
-        --climatology PATH      Climatology output (default: \$DATA_ROOT/data/climatology/res=<res>).
-        --anomaly-std PATH      Anomaly std output (default: \$DATA_ROOT/data/anomaly-std/res=<res>).
+        --output PATH           Statistics output, groups climatology and anomaly_std
+                                (default: \$DATA_ROOT/data/statistics/res=<res>).
         --log-dir DIR           Where to write the log (default: \${PROJECT_ROOT}/logs/climatology).
-        --replace               Write new versions of existing outputs (arco-make --replace).
+        --replace               Write a new version of an existing output (arco-make --replace).
+        --streaming             One series at a time (arco-make --streaming; default: one graph).
         --dask-setup SETUP      arco-make's Dask scheduler (default: threads).
         --image IMAGE           Apptainer image (default: oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH      Run from a local virtual environment instead of Apptainer.
@@ -43,8 +44,8 @@ EOF
 PROJECT_ROOT=""
 CONFIG_DIR=""
 INPUT=""
-CLIMATOLOGY=""
-ANOMALY_STD=""
+OUTPUT=""
+STREAMING=false
 LOG_DIR=""
 REPLACE=false
 DASK_SETUP="threads"
@@ -63,10 +64,9 @@ while [[ $# -gt 0 ]]; do
         --config-dir=*) CONFIG_DIR="${1#*=}"; shift ;;
         --input) INPUT="$2"; shift 2 ;;
         --input=*) INPUT="${1#*=}"; shift ;;
-        --climatology) CLIMATOLOGY="$2"; shift 2 ;;
-        --climatology=*) CLIMATOLOGY="${1#*=}"; shift ;;
-        --anomaly-std) ANOMALY_STD="$2"; shift 2 ;;
-        --anomaly-std=*) ANOMALY_STD="${1#*=}"; shift ;;
+        --output) OUTPUT="$2"; shift 2 ;;
+        --output=*) OUTPUT="${1#*=}"; shift ;;
+        --streaming) STREAMING=true; shift ;;
         --log-dir) LOG_DIR="$2"; shift 2 ;;
         --log-dir=*) LOG_DIR="${1#*=}"; shift ;;
         --replace) REPLACE=true; shift ;;
@@ -120,22 +120,19 @@ if [[ ! -f "${CONFIG_PATH}" ]]; then
 fi
 NAME="$(basename "${CONFIG_PATH}" .toml)"
 
-# Default paths: <product>/res=<res> in, climatology/ and anomaly-std/ at the same resolution out.
-if [[ -z "${INPUT}" || -z "${CLIMATOLOGY}" || -z "${ANOMALY_STD}" ]]; then
+# Default paths: <product>/res=<res> in, statistics/ at the same resolution out.
+if [[ -z "${INPUT}" || -z "${OUTPUT}" ]]; then
     if [[ ! "${NAME}" =~ ^([a-z0-9-]+)_res-([0-9]+p[0-9]+)$ ]]; then
-        echo "Error: cannot derive paths from '${NAME}' (expected <product>_res-<res>): give --input, --climatology and --anomaly-std." >&2
+        echo "Error: cannot derive paths from '${NAME}' (expected <product>_res-<res>): give --input and --output." >&2
         exit 1
     fi
     DATA="${DATA_ROOT:-${PROJECT_ROOT}}/data"
     INPUT="${INPUT:-${DATA}/${BASH_REMATCH[1]}/res=${BASH_REMATCH[2]}}"
-    CLIMATOLOGY="${CLIMATOLOGY:-${DATA}/climatology/res=${BASH_REMATCH[2]}}"
-    ANOMALY_STD="${ANOMALY_STD:-${DATA}/anomaly-std/res=${BASH_REMATCH[2]}}"
+    OUTPUT="${OUTPUT:-${DATA}/statistics/res=${BASH_REMATCH[2]}}"
 fi
-for OUTPUT in "${CLIMATOLOGY}" "${ANOMALY_STD}"; do
-    if [[ "${OUTPUT}" != *://* ]]; then
-        mkdir -p "$(dirname "${OUTPUT}")"
-    fi
-done
+if [[ "${OUTPUT}" != *://* ]]; then
+    mkdir -p "$(dirname "${OUTPUT}")"
+fi
 
 LOG_DIR="${LOG_DIR:-${PROJECT_ROOT}/logs/climatology}"
 mkdir -p "${LOG_DIR}"
@@ -159,10 +156,13 @@ FLAGS=(--dask-setup="${DASK_SETUP}" --log-level="${LOG_LEVEL}")
 if [[ "${REPLACE}" == true ]]; then
     FLAGS+=(--replace)
 fi
+if [[ "${STREAMING}" == true ]]; then
+    FLAGS+=(--streaming)
+fi
 
-echo "Statistics of ${INPUT} to ${CLIMATOLOGY} and ${ANOMALY_STD}, log: ${LOG_FILE} (started $(date -u), host $(hostname))"
+echo "Statistics of ${INPUT} to ${OUTPUT}, log: ${LOG_FILE} (started $(date -u), host $(hostname))"
 "${RUN_CMD[@]}" compute-climatology "${FLAGS[@]}" -- \
-    "${CONFIG_PATH}" "${INPUT}" "${CLIMATOLOGY}" "${ANOMALY_STD}" >> "${LOG_FILE}" 2>&1
+    "${CONFIG_PATH}" "${INPUT}" "${OUTPUT}" >> "${LOG_FILE}" 2>&1
 STATUS=$?
 if [[ ${STATUS} -eq 0 ]]; then
     echo "Statistics of ${NAME} finished ($(date -u))."

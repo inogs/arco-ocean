@@ -154,7 +154,7 @@ The climatology and the anomaly standard deviation have 365 bins along `time`, t
 
 ## Data access
 
-ARCO-OCEAN is available via [AWS S3](https://aws.amazon.com/s3/) in the `s3://ogs-arco-ocean` bucket, one Icechunk repository per product and resolution: `historical/res=<res>` for the dataset, `climatology/res=<res>` and `anomaly-std/res=<res>` for its statistics, with `<res>` one of `0p25`, `0p5` and `1p0`.
+ARCO-OCEAN is available via [AWS S3](https://aws.amazon.com/s3/) in the `s3://ogs-arco-ocean` bucket, one Icechunk repository per product and resolution: `historical/res=<res>` for the dataset and `statistics/res=<res>` for its statistics, with `<res>` one of `0p25`, `0p5` and `1p0`. The statistics repository has two groups, `climatology` and `anomaly_std`, written together in one version.
 
 With a Python environment holding `xarray` and `icechunk` ([installation](https://icechunk.io/en/latest/)), a dataset is opened lazily, without credentials:
 
@@ -173,6 +173,8 @@ storage = icechunk.s3_storage(
 repo = icechunk.Repository.open(storage)
 dataset = xr.open_zarr(repo.readonly_session("main").store, consolidated=False)
 ```
+
+The statistics open the same way from `statistics/res=<res>`, one group at a time (`xr.open_zarr(store, group="climatology", consolidated=False)`, or `group="anomaly_std"`), or both together with `xr.open_datatree(store, engine="zarr", consolidated=False)`.
 
 A download writes its blocks one commit at a time on a branch of its own, and `main` moves to the last of them only once the run is complete: `main` is always a whole version. The previous version is kept for a while (the recipes' `keep_versions = 2`); `main`'s history also lists the commits of single blocks, which are not whole versions.
 

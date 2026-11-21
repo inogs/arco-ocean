@@ -3,6 +3,9 @@
 # ==== READING CONFIGURATION ====
 [read]
 engine = "icechunk"  # an output of arco-make
+# The statistics (statistics/res=<res>) are one repository with the groups climatology and
+# anomaly_std, which share their coordinates: checking one checks the grid of both.
+group = "climatology"
 inline_array = false
 chunks = {time = "auto", depth = -1, lat = -1, lon = -1}
 
