@@ -10,6 +10,10 @@ reference_period = {start = 1993-01-01T00:00:00, end = 2024-01-01T00:00:00}
 window = 29
 weighting = "gaussian"
 weighting_scale = 7
+# Streamed level by level (scripts/climatology.sh runs arco-make --streaming): one series per
+# variable and level, as many at once as fit in memory. A whole 3D variable's statistics at
+# 0.25 deg take about 450 GB; one level's about 9 GB.
+split_dims = ["depth"]
 
 # ==== READING CONFIGURATION ====
 [read]

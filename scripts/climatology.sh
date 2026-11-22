@@ -30,7 +30,11 @@ DESCRIPTION
                                 (default: \$DATA_ROOT/data/statistics/res=<res>).
         --log-dir DIR           Where to write the log (default: \${PROJECT_ROOT}/logs/climatology).
         --replace               Write a new version of an existing output (arco-make --replace).
-        --streaming             One series at a time (arco-make --streaming; default: one graph).
+        --graph                 One Dask graph (arco-make --graph) instead of streaming the series
+                                of the recipe's split_dims, as many at once as fit in memory
+                                (arco-make --streaming, the default: the graph's memory grows
+                                with the years, beyond the project VM's at 0.25 deg).
+        --streaming             The default (accepted, as before).
         --dask-setup SETUP      arco-make's Dask scheduler (default: threads).
         --image IMAGE           Apptainer image (default: oras://ghcr.io/stefanocampanella/arco-make:latest).
         --virtual-env PATH      Run from a local virtual environment instead of Apptainer.
@@ -45,7 +49,7 @@ PROJECT_ROOT=""
 CONFIG_DIR=""
 INPUT=""
 OUTPUT=""
-STREAMING=false
+STREAMING=true
 LOG_DIR=""
 REPLACE=false
 DASK_SETUP="threads"
@@ -67,6 +71,7 @@ while [[ $# -gt 0 ]]; do
         --output) OUTPUT="$2"; shift 2 ;;
         --output=*) OUTPUT="${1#*=}"; shift ;;
         --streaming) STREAMING=true; shift ;;
+        --graph) STREAMING=false; shift ;;
         --log-dir) LOG_DIR="$2"; shift 2 ;;
         --log-dir=*) LOG_DIR="${1#*=}"; shift ;;
         --replace) REPLACE=true; shift ;;
@@ -158,6 +163,8 @@ if [[ "${REPLACE}" == true ]]; then
 fi
 if [[ "${STREAMING}" == true ]]; then
     FLAGS+=(--streaming)
+else
+    FLAGS+=(--graph)
 fi
 
 echo "Statistics of ${INPUT} to ${OUTPUT}, log: ${LOG_FILE} (started $(date -u), host $(hostname))"
