@@ -26,3 +26,11 @@ dependencies = [
     "scipy>=1.17.1",
     "tqdm>=4.67.3",
 ]
+
+[dependency-groups]
+# The coarsening notes' doctests and measurements (docs/, tests/): `uv run --only-group notes ...`.
+# arco-make at the commit the notes were checked with; move to its release once tagged.
+notes = [
+    "arcomake[live] @ git+https://github.com/stefanocampanella/arco-make.git@5d010dfd861c89f85c7b2db2df1170189e243224",
+    "pytest",
+]

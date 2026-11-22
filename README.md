@@ -122,7 +122,7 @@ All fields are regridded conservatively with `xarray-regrid` ([Schilperoort et a
 - River discharge: a flux per unit area, regridded with missing values as 0.
 - ERA5: values everywhere. The `land_sea_mask`, renamed `lsm`, is ERA5's fraction of land in each cell, which is not GLORYS12's sea: use `seafrac` for the ocean.
 
-The [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md) explain these choices, with measurements at 0.25°, 0.5° and 1°: which coarse cells to call sea, how the water of each layer is kept, how gaps are filled, sea ice and river discharge.
+The [notes on coarsening ocean datasets](docs/coarsen-ocean-datasets.md) explain these choices, with measurements at 0.25°, 0.5° and 1°: which coarse cells to call sea, how the water of each layer is kept, how gaps are filled, sea ice and river discharge.
 
 Every block of the download is checked before it is written: a complete daily time axis, the grid convention, ocean and sea ice values exactly where `seafrac > 0` and every other variable everywhere, and a `long_name` and `units` on every variable, no two variables sharing a `long_name`. `configs/validate/historical.toml` checks a whole dataset the same way, given its dates: `arco-make validate --start 1993-01-01 --end 2026-07-01 configs/validate/historical.toml DATASET`.
 
