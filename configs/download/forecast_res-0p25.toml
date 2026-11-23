@@ -72,9 +72,11 @@ msl = "mslp"
 name = "rename_coordinates"
 name_dict = {latitude = "lat", longitude = "lon"}
 
+# cfgrib's attributes of the variables (GRIB_* keys, a standard_name "unknown") are dropped:
+# they take ERA5's at the end, as in the historical dataset.
 [[datasets.ifs.postprocess]]
 name = "drop_var_attrs"
-variables = ["lat", "lon", "time"]
+variables = ["lat", "lon", "time", "10u", "10v", "2d", "2t", "mslp"]
 
 [[datasets.ifs.postprocess]]
 name = "drop_attrs"
@@ -156,9 +158,11 @@ reduce = "sum"
 name = "rename_coordinates"
 name_dict = {latitude = "lat", longitude = "lon"}
 
+# cfgrib's attributes of the variables (GRIB_* keys, a standard_name "unknown") are dropped:
+# they take ERA5's at the end, as in the historical dataset.
 [[datasets.ifs_cumulative.postprocess]]
 name = "drop_var_attrs"
-variables = ["lat", "lon", "time"]
+variables = ["lat", "lon", "time", "ssrd", "strd", "tp"]
 
 [[datasets.ifs_cumulative.postprocess]]
 name = "drop_attrs"
@@ -663,6 +667,50 @@ long_name = "river discharge into the ocean per unit area"
 units = "m"
 cell_measures = "area: areacello"
 comment = "GloFAS forecast discharge (control member, operational model; mean of 24 h) at the pits of its drainage network (local drain direction 5, LDD v4.0), divided by the cell's area: metres of water per day over the whole cell, as a daily precipitation total. Discharge (m3/s) = value x cell area / 86400. Pits of basins without outlet (Caspian, Lake Chad) are included."
+
+# The IFS variables: ERA5's attributes, as in the historical dataset (daily means; daily sums
+# for ssrd, strd and tp).
+[postprocess.10u]
+long_name = "10 metre U wind component"
+short_name = "u10"
+units = "m s**-1"
+
+[postprocess.10v]
+long_name = "10 metre V wind component"
+short_name = "v10"
+units = "m s**-1"
+
+[postprocess.2d]
+long_name = "2 metre dewpoint temperature"
+short_name = "d2m"
+units = "K"
+
+[postprocess.2t]
+long_name = "2 metre temperature"
+short_name = "t2m"
+units = "K"
+
+[postprocess.mslp]
+long_name = "Mean sea level pressure"
+short_name = "msl"
+standard_name = "air_pressure_at_mean_sea_level"
+units = "Pa"
+
+[postprocess.ssrd]
+long_name = "Surface solar radiation downwards"
+short_name = "ssrd"
+standard_name = "surface_downwelling_shortwave_flux_in_air"
+units = "J m**-2"
+
+[postprocess.strd]
+long_name = "Surface thermal radiation downwards"
+short_name = "strd"
+units = "J m**-2"
+
+[postprocess.tp]
+long_name = "Total precipitation"
+short_name = "tp"
+units = "m"
 
 [[postprocess]]
 name = "assign_attrs"
