@@ -22,4 +22,4 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
-      - run: uv run --only-group notes pytest -q tests
+      - run: uv run --frozen --only-group notes pytest -q tests
