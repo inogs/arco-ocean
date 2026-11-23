@@ -603,6 +603,65 @@ units = "m"
 cell_measures = "area: areacello"
 comment = "GloFAS v5.0 discharge (mean of 24 h) at the pits of its drainage network (local drain direction 5, LDD v4.0), divided by the cell's area: metres of water per day over the whole cell, as a daily precipitation total. Discharge (m3/s) = value x cell area / 86400. Pits of basins without outlet (Caspian, Lake Chad) are included."
 
+# The atmospheric variables: ERA5's long_name, short_name and units, CF standard names (ERA5
+# gives ssrd the flux's, W m-2, for a total in J m-2, and strd, tp and the others none), and
+# the daily reduction (cell_methods).
+[postprocess.10u]
+long_name = "10 metre U wind component"
+short_name = "u10"
+standard_name = "eastward_wind"
+units = "m s**-1"
+cell_methods = "time: mean"
+
+[postprocess.10v]
+long_name = "10 metre V wind component"
+short_name = "v10"
+standard_name = "northward_wind"
+units = "m s**-1"
+cell_methods = "time: mean"
+
+[postprocess.2d]
+long_name = "2 metre dewpoint temperature"
+short_name = "d2m"
+standard_name = "dew_point_temperature"
+units = "K"
+cell_methods = "time: mean"
+
+[postprocess.2t]
+long_name = "2 metre temperature"
+short_name = "t2m"
+standard_name = "air_temperature"
+units = "K"
+cell_methods = "time: mean"
+
+[postprocess.mslp]
+long_name = "Mean sea level pressure"
+short_name = "msl"
+standard_name = "air_pressure_at_mean_sea_level"
+units = "Pa"
+cell_methods = "time: mean"
+
+[postprocess.ssrd]
+long_name = "Surface solar radiation downwards"
+short_name = "ssrd"
+standard_name = "integral_wrt_time_of_surface_downwelling_shortwave_flux_in_air"
+units = "J m**-2"
+cell_methods = "time: sum"
+
+[postprocess.strd]
+long_name = "Surface thermal radiation downwards"
+short_name = "strd"
+standard_name = "integral_wrt_time_of_surface_downwelling_longwave_flux_in_air"
+units = "J m**-2"
+cell_methods = "time: sum"
+
+[postprocess.tp]
+long_name = "Total precipitation"
+short_name = "tp"
+standard_name = "lwe_thickness_of_precipitation_amount"
+units = "m"
+cell_methods = "time: sum"
+
 [[postprocess]]
 name = "assign_attrs"
 title = "ARCO-OCEAN: Analysis-Ready Cloud-Optimized Ocean Dataset"
