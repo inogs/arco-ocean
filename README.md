@@ -246,7 +246,9 @@ The datasets (historical, statistics and forecasts) are released under the Creat
 | GloFAS v5.0 historical ([10.24381/cds.a4fdd6b9](https://doi.org/10.24381/cds.a4fdd6b9)) and GloFAS forecast ([10.24381/cds.ff1aef77](https://doi.org/10.24381/cds.ff1aef77)), Copernicus Emergency Management Service | river discharge | [CEMS-FLOODS datasets licence](https://ewds.climate.copernicus.eu/licences/cems-floods) | "Contains modified Copernicus Emergency Management Service information [year]" |
 | ECMWF IFS open data ([data.ecmwf.int](https://data.ecmwf.int/forecasts/), read from its copy on AWS) | forecasts: atmosphere | CC BY 4.0 and the [ECMWF terms of use](https://apps.ecmwf.int/datasets/licences/general/) | "based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)" |
 
-The GloFAS forecasts are given for information only: they are not flood warnings. The code of this repository (scripts, recipes, documentation) is released under the MIT licence ([LICENSE](LICENSE)); the ONI tutorial, adapted from [Climatematch](https://comptools.climatematch.io/)'s, under its licences, CC BY 4.0 for the text and the BSD 3-Clause License for the code.
+Under its licence, the rights in the modifications of the GloFAS data belong to their creators: the river discharge is released under CC BY 4.0 as the rest. The GloFAS forecasts are given for information only: they are not flood warnings. The Copernicus Marine Service licence (clause 2.6) asks that its record-keeping requirement be passed on: users of the ocean and sea-ice variables are asked to keep records of their use of the data, enough to document and trace it, and to make them available to the Copernicus Marine Service on reasonable notice.
+
+The code of this repository (scripts, recipes, documentation) is released under the MIT licence ([LICENSE](LICENSE)); the ONI tutorial, adapted from [Climatematch](https://comptools.climatematch.io/)'s, under its licences, CC BY 4.0 for the text and the BSD 3-Clause License for the code.
 
 ## Use of AI tools
 
@@ -256,5 +258,5 @@ The recipes, scripts and documentation of this repository have been written larg
 
 [//]: # (FIXME: Temporary. Come up with a better attribution)
 ```
-Campanella, S., Salon S., Querin, S., Bortolussi, L., and Stock, J.: ARCO-OCEAN: A dataset of physical properties of the ocean, waves, and sea ice, with hydrological and atmospheric forcing, optimized for machine learning. https://doi.org/10.5281/zenodo.17751608
+Campanella, S., Salon S., Querin, S., Bortolussi, L., and Stock, J.: ARCO-OCEAN: A dataset of physical properties of the ocean and sea ice, with hydrological and atmospheric forcing, optimized for machine learning. https://doi.org/10.5281/zenodo.17751608
 ```
