@@ -183,7 +183,13 @@ mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/${NAME}_$(date -u +%Y%m%dT%H%M%SZ).log"
 
 if [[ -n "${VENV}" ]]; then
-    RUN_CMD=(env VIRTUAL_ENV="${VENV}" uv run --no-sync arco-make)
+    # The environment's own arco-make: `uv run` here would use this project's environment
+    # (the tutorials'), ignoring VIRTUAL_ENV.
+    if [[ ! -x "${VENV}/bin/arco-make" ]]; then
+        echo "Error: no arco-make in the virtual environment '${VENV}'." >&2
+        exit 1
+    fi
+    RUN_CMD=("${VENV}/bin/arco-make")
 else
     if ! command -v apptainer >/dev/null 2>&1; then
         echo "Error: Apptainer is required without --virtual-env." >&2
