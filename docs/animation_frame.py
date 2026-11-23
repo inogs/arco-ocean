@@ -26,7 +26,7 @@ fig = plt.figure(figsize=(6, 6), dpi=180, facecolor=background)
 ax = fig.add_axes((0.02, 0.06, 0.96, 0.9), projection=ccrs.Orthographic(lon0, 12))
 ax.set_facecolor(background)
 ax.add_feature(cfeature.LAND, facecolor="#2b2f36", zorder=0)
-mesh = ax.pcolormesh(
+ax.pcolormesh(
   sst.lon,
   sst.lat,
   sst,
@@ -52,19 +52,9 @@ ax.imshow(
 ax.coastlines(linewidth=0.3, color="#9aa3ad", zorder=3)
 ax.spines["geo"].set_edgecolor("#3a4252")
 date = np.datetime_as_string(day.time.values, unit="D")
-fig.text(
-  0.04,
-  0.025,
-  f"ARCO-OCEAN  sea surface temperature and sea ice  {date}",
-  color="#cfd6df",
-  fontsize=8,
-  family="DejaVu Sans",
-)
-cax = fig.add_axes((0.70, 0.03, 0.26, 0.012))
-bar = fig.colorbar(mesh, cax=cax, orientation="horizontal")
-bar.set_ticks([0, 10, 20, 30])
-bar.ax.tick_params(labelsize=6, colors="#cfd6df", length=2)
-bar.outline.set_edgecolor("#3a4252")
-bar.ax.set_title("°C", color="#cfd6df", fontsize=6, pad=2)
+# Title and date only, small and near the centre of the bottom edge, so a cropped thumbnail keeps
+# them (maintainer, 23 Nov: no colour bar).
+for x, text, align in ((0.30, "ARCO-OCEAN", "left"), (0.70, date, "right")):
+  fig.text(x, 0.025, text, color="#cfd6df", fontsize=8, family="DejaVu Sans", ha=align)
 fig.savefig(sys.argv[2], facecolor=background)
 print("wrote", sys.argv[2], sst.shape)

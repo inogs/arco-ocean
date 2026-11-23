@@ -1,7 +1,7 @@
-# An animation of ARCO-OCEAN (design proposal)
+# An animation of ARCO-OCEAN (design)
 
 Roadmap item 5: an animation for the Earthmover marketplace listing and the documentation. This
-is a proposal for the maintainer to review before any production rendering.
+was a proposal; the maintainer chose its content and text on 23 Nov (Decisions, below).
 
 ![Prototype frame](animation-prototype-frame.png)
 
@@ -18,7 +18,7 @@ season:
 - the Gulf Stream and the Kuroshio;
 - the Arctic ice melting back in summer, and the Antarctic ice growing in austral winter.
 
-**The year.** Proposed: 2023, El Niño's onset, when the eastern Pacific warms over the months.
+**The year.** 2023, El Niño's onset, when the eastern Pacific warms over the months.
 It is within the historical dataset and well known; any year works.
 
 ## Why this design
@@ -34,7 +34,7 @@ It is within the historical dataset and well known; any year works.
 - **A loop for the marketplace.** 12 s at 30 frames per second is 360 frames, one per day, and
   one turn of the globe. It loops without a jump in rotation, though one in season.
 
-## Alternatives (pick one, or keep the proposal)
+## Alternatives considered
 
 1. **Surface currents.** Speed from `uo`/`vo` (cmocean `speed`, on black), with particles
    advected along the currents. The most striking option, but rendering particles needs more
@@ -63,11 +63,13 @@ It is within the historical dataset and well known; any year works.
 - **Effort.** About a day for the script and a first video, once the 0.25° historical repository
   is published. The frames take minutes on the project VM.
 
+## Decisions (maintainer, 23 Nov)
+
+1. **Variable and year:** sea surface temperature with sea ice, in 2023, as proposed.
+2. **Text:** the title and a running date, small, near the centre of the bottom edge, so that a
+   thumbnail cropped to the centre keeps them; no colour bar, as in the prototype frame.
+
 ## Open points
 
-1. **Variable and year:** sea surface temperature with sea ice in 2023 (proposed), or currents
-   or anomalies (alternatives above)?
-2. **Text:** a title only (proposed), or also a date counter and a colour bar, as in the
-   prototype? Earthmover's thumbnails may crop the frame.
-3. **Branding:** Earthmover's marketplace may have size and length requirements, to check when
+1. **Branding:** Earthmover's marketplace may have size and length requirements, to check when
    listing (roadmap item 10).
