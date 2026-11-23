@@ -218,7 +218,12 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
         MODE+=(--replace)
     fi
     echo "Run ${attempt}/${ATTEMPTS} ${MODE[*]+"${MODE[*]}"}"
-    RUN_START=$(wc -l < "${LOG_FILE}" 2>/dev/null || echo 0)
+    # Where this run's lines start in the log (none yet on the first run: the shell, not wc,
+    # reported the missing file).
+    RUN_START=0
+    if [[ -f "${LOG_FILE}" ]]; then
+        RUN_START=$(wc -l < "${LOG_FILE}")
+    fi
     {
         echo "==== run ${attempt}/${ATTEMPTS} ${MODE[*]+"${MODE[*]}"} ($(date -u)) ===="
         "${RUN_CMD[@]}" download "${FLAGS[@]}" "${MODE[@]+"${MODE[@]}"}" -- "${CONFIG_PATH}" "${OUTPUT}"
