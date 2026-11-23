@@ -3,10 +3,10 @@ revision = 5
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -285,14 +285,14 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 notes = [
-    { name = "arcomake", extras = ["live"], git = "https://github.com/stefanocampanella/arco-make.git?rev=5d010dfd861c89f85c7b2db2df1170189e243224" },
+    { name = "arcomake", extras = ["live"], git = "https://github.com/stefanocampanella/arco-make.git?rev=441874f6db7e610f2ca5d45568620310c12e7373" },
     { name = "pytest" },
 ]
 
 [[package]]
 name = "arcomake"
-version = "0.1.0"
-source = { git = "https://github.com/stefanocampanella/arco-make.git?rev=5d010dfd861c89f85c7b2db2df1170189e243224#5d010dfd861c89f85c7b2db2df1170189e243224" }
+version = "0.2.0"
+source = { git = "https://github.com/stefanocampanella/arco-make.git?rev=441874f6db7e610f2ca5d45568620310c12e7373#441874f6db7e610f2ca5d45568620310c12e7373" }
 dependencies = [
     { name = "aiohttp" },
     { name = "botocore", extra = ["crt"] },
