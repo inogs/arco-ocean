@@ -9,7 +9,9 @@
 # commit on the run's own branch; the repository's `main` moves to the new version only when
 # every block is written. If the run fails, it is attempted again with `arco-make download
 # --resume` (`--extend --resume` for an extension), which keeps the blocks already committed and
-# writes the others (up to --attempts runs in all). Transient network errors are already retried
+# writes the others (up to --attempts runs in all). A forecast download stopped at a run its
+# sources have not published yet (exit status 75: the runs before are stored) is attempted again
+# with --extend. Transient network errors are already retried
 # inside arco-make, block by block (the recipe's [retries]). It needs arco-make with `--extend`
 # and recipes without dates: an image built after the arco-make stack is merged.
 
@@ -202,17 +204,27 @@ else
     RUN_CMD=(apptainer run "${APPTAINER_FLAGS[@]+"${APPTAINER_FLAGS[@]}"}" "${IMAGE}")
 fi
 
-FLAGS=(--no-progress --log-level="${LOG_LEVEL}")
-[[ -n "${START_DATE}" ]] && FLAGS+=(--start="${START_DATE}")
-[[ -n "${END_DATE}" ]] && FLAGS+=(--end="${END_DATE}")
+# Exit status of arco-make when a forecast run is not published yet: the runs before it are
+# stored, and the next attempt extends the output (not --resume, not --start).
+NOT_PUBLISHED=75
 
 echo "Download of ${NAME} to ${OUTPUT}, log: ${LOG_FILE} (started $(date -u), PID $$, host $(hostname))"
+STATUS=0
 for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
+    FLAGS=(--no-progress --log-level="${LOG_LEVEL}" --end="${END_DATE}")
     MODE=()
+    if [[ ${STATUS} -eq ${NOT_PUBLISHED} ]]; then
+        # The runs before the one not published are stored: extend from there.
+        EXTEND=true
+        RESUME=false
+        REPLACE=false
+    fi
     if [[ "${EXTEND}" == true ]]; then
         MODE+=(--extend)
+    else
+        FLAGS+=(--start="${START_DATE}")
     fi
-    if [[ ${attempt} -gt 1 || "${RESUME}" == true ]]; then
+    if [[ ( ${attempt} -gt 1 && ${STATUS} -ne ${NOT_PUBLISHED} ) || "${RESUME}" == true ]]; then
         MODE+=(--resume)
     elif [[ "${REPLACE}" == true ]]; then
         MODE+=(--replace)
@@ -233,7 +245,11 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
         echo "Download of ${NAME} finished: ${OUTPUT} ($(date -u))."
         exit 0
     fi
-    echo "Run ${attempt} failed (exit code ${STATUS}): see ${LOG_FILE}."
+    if [[ ${STATUS} -eq ${NOT_PUBLISHED} ]]; then
+        echo "Run ${attempt}: a forecast run is not published yet; the runs before are stored."
+    else
+        echo "Run ${attempt} failed (exit code ${STATUS}): see ${LOG_FILE}."
+    fi
     # A failed check of the recipe's [checks] fails again on the same data: no further attempt.
     if tail -n "+$((RUN_START + 1))" "${LOG_FILE}" | grep -q "A check of \[checks\] failed"; then
         echo "A check of the recipe failed (see the log): fix the cause, then rerun this command with --resume." >&2
@@ -243,5 +259,9 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
         sleep "${RETRY_DELAY}"
     fi
 done
+if [[ ${STATUS} -eq ${NOT_PUBLISHED} ]]; then
+    echo "Download of ${NAME}: a forecast run is still not published after ${ATTEMPTS} runs; the runs before are stored, the next collection (--extend) continues." >&2
+    exit "${NOT_PUBLISHED}"
+fi
 echo "Download of ${NAME} failed after ${ATTEMPTS} runs (see ${LOG_FILE}): rerun this command with --resume to continue, if the log shows a run waiting." >&2
 exit 1
