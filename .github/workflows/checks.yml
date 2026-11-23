@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# The pre-commit checks (.pre-commit-config.yaml): TOML and YAML syntax, ruff, ShellCheck, REUSE,
+# secrets. The recipes are validated by the tests (notes.yml).
+name: checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # gitleaks scans the history
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+      - run: uvx pre-commit run --all-files --show-diff-on-failure

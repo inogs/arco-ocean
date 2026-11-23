@@ -35,3 +35,15 @@ notes = [
     "arcomake[live] @ git+https://github.com/stefanocampanella/arco-make.git@441874f6db7e610f2ca5d45568620310c12e7373",
     "pytest",
 ]
+
+# The style of arco-make: 2-space indentation, 100 columns, the same rules.
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+indent-width = 2
+# The Jupyter tutorial is left as written (to be replaced by a marimo notebook).
+extend-exclude = ["tutorials/*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501", "B028"]

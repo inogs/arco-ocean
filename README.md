@@ -174,6 +174,13 @@ releases. Each component has a flag variable (`ifs_forecast`, `glofas_forecast`,
 `glo12_forecast`; `init_time` x `lead_time`), true where its values are its run's own forecast,
 false where they come from later releases or are missing (a source without the run: NaN).
 
+### Checks
+
+`uvx pre-commit run --all-files` runs the checks made before each commit: TOML and YAML syntax,
+ruff, ShellCheck, REUSE and a secret scan. `uv run --frozen --only-group notes pytest tests` loads
+every recipe with the models of the pinned arco-make (an unknown key, step or argument fails) and
+runs the examples of the coarsening notes. CI runs both on every pull request.
+
 ## Data format
 
 Each resolution is an [Icechunk](https://icechunk.io) repository: a [Zarr version 3](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html) dataset with versions, whose `main` branch is the current one. The dataset has the dimensions `time`, `depth`, `lat` and `lon` (and `bnds`, for the cell bounds), each with its coordinate. The latitudes increase within [-90, 90], and the longitudes are in the range [0, 360), following the [convention used by the ECMWF](https://confluence.ecmwf.int/display/CKB/ERA5%3A+What+is+the+spatial+reference#ERA5:Whatisthespatialreference-Coordinatesystem); the grid's polar rows are centred on the poles and half as tall. The depth coordinate is GLORYS12's level depths. The time coordinate uses the proleptic Gregorian calendar and unit "days since 1993-01-01" (UTC), one stamp per day at 00:00.
@@ -202,12 +209,12 @@ import icechunk
 import xarray as xr
 
 storage = icechunk.s3_storage(
-    bucket="ogs-arco-ocean",
-    prefix="historical/res=0p25",
-    region="eu-south-1",
-    anonymous=True,
-    # Icechunk waits 60 s by default for a stalled answer from S3; asking again sooner is faster.
-    network_stream_timeout_seconds=20,
+  bucket="ogs-arco-ocean",
+  prefix="historical/res=0p25",
+  region="eu-south-1",
+  anonymous=True,
+  # Icechunk waits 60 s by default for a stalled answer from S3; asking again sooner is faster.
+  network_stream_timeout_seconds=20,
 )
 repo = icechunk.Repository.open(storage)
 dataset = xr.open_zarr(repo.readonly_session("main").store, consolidated=False)
