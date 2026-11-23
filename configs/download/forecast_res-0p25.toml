@@ -1,0 +1,682 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# Forecast runs: the 00 UTC run of each day of [--start, --end), its 10 lead days, stored along
+# init_time (arco-make [forecast]); scripts/forecast.sh backfills and adds each day's run. The
+# same steps and variables as historical_res-0p25.toml, from the sources' forecasts: IFS HRES
+# (ECMWF open data) for ERA5, GLO12 for GLORYS12, the GloFAS forecast. Each component's flag
+# variable tells where its values are its run's own forecast (GLO12 runs collected after their
+# day hold later releases' values; a source without a run leaves NaN). Chunks are planned by
+# arco-make for each run (`arco-make download --plan` prints them).
+time_dim = "time"
+
+[forecast]
+horizon = "10D"
+every = "1D"
+# The last five years of runs (maintainer, 22 Nov 2026); the window may be lengthened later.
+window = 1826
+# A source without a run younger than two days has not published it yet: the run fails and is
+# collected again later (scripts/forecast.sh retries, the next day catches up). Older, the source
+# lacks it: NaN, flagged.
+missing_after = "2D"
+
+# The target grid of every regrid step, named by them.
+[grids.target]
+south = -90.0
+north = 90.0
+west = 0.0
+east = 359.75
+resolution_lat = 0.25
+resolution_lon = 0.25
+
+# IFS HRES 00 UTC runs from ECMWF's open data on AWS (anonymous; 0.25 deg from early 2024):
+# 3-hourly steps to 144 h, then 6-hourly, so a day's mean takes 8 samples to day 5, then 4
+# (ERA5's: 24). Longitudes -180 to 180: the regridding puts them on the target grid.
+[datasets.ifs]
+forecast = "runs"
+flag = "ifs_forecast"
+
+[[datasets.ifs.parts]]
+filename_or_obj = "s3://ecmwf-forecasts"
+engine = "ecmwfopendata"
+param = ["10u", "10v", "2d", "2t", "msl"]
+
+[[datasets.ifs.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.ifs.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+grid = "target"
+
+[[datasets.ifs.postprocess]]
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "mean"
+
+[[datasets.ifs.postprocess]]
+name = "rename"
+
+[datasets.ifs.postprocess.name_dict]
+u10 = "10u"
+v10 = "10v"
+d2m = "2d"
+t2m = "2t"
+msl = "mslp"
+
+[[datasets.ifs.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.ifs.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.ifs.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Fields constant in time that ERA5 stores as series (geopotential at the surface, land-sea
+# mask): read at one stamp, static (written once). ERA5's, as in the historical dataset.
+[[datasets.era5_static.parts]]
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+engine = "zarr"
+consolidated = true
+storage_options = {token = "anon"}
+static_time = 2000-01-01T00:00:00
+
+[[datasets.era5_static.postprocess]]
+name = "select_variables"
+variables = [
+    "geopotential_at_surface",
+    "land_sea_mask"]
+
+[[datasets.era5_static.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.era5_static.postprocess]]
+name = "rename"
+
+[datasets.era5_static.postprocess.name_dict]
+geopotential_at_surface = "z"
+land_sea_mask = "lsm"
+
+[[datasets.era5_static.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.era5_static.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon"]
+
+[[datasets.era5_static.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# IFS accumulations since the run's start, read as the increments between steps (stamped at
+# the start of theirs): day D sums exactly the accumulation at its end minus that at its start.
+# Packed lossily in GRIB, an increment can be a little negative: clipped (radiation too).
+[datasets.ifs_cumulative]
+forecast = "runs"
+flag = "ifs_forecast"
+
+[[datasets.ifs_cumulative.parts]]
+filename_or_obj = "s3://ecmwf-forecasts"
+engine = "ecmwfopendata"
+param = ["ssrd", "strd", "tp"]
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+grid = "target"
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "clip_negative"
+variables = ["ssrd", "strd", "tp"]
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "sum"
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.ifs_cumulative.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ==== GLOFAS SECTION ====
+
+# River input to the ocean: the discharge at the pits of GloFAS's drainage network (local drain
+# direction 5, where rivers end), as metres of water per day over each coarse cell, like a daily
+# precipitation total; regridded conservatively, the total kept (checked). The GloFAS forecast's
+# control member, of the operational model (v4.x in Nov 2026: the historical dataset's is
+# v5.0), whose drainage directions are v4.0's. Lead 24 h is the mean over the run's day: moved
+# back a day, lead day k is day k.
+[datasets.glofas]
+forecast = "runs"
+flag = "glofas_forecast"
+
+[[datasets.glofas.parts]]
+filename_or_obj = "ewds://cems-glofas-forecast"
+engine = "earlywarningdatastore"
+system_version = "operational"
+hydrological_model = "lisflood"
+product_type = "control_forecast"
+variable = "river_discharge_in_the_last_24_hours"
+time_offset = "-24h"
+
+[[datasets.glofas.parts]]
+filename_or_obj = "https://confluence.ecmwf.int/download/attachments/242067380/ldd_glofas_v4_0.nc"
+engine = "netcdfoverhttp"
+drop_variables = ["crs"]
+rename = {lat = "latitude", lon = "longitude"}
+# The file's coordinates differ from the discharge's by about 4e-12.
+coordinate_tolerance = 1e-9
+
+[[datasets.glofas.postprocess]]
+name = "keep_where"
+variables = ["dis24"]
+condition = "ldd"
+equals = 5
+
+[[datasets.glofas.postprocess]]
+name = "drop_vars"
+names = ["ldd"]
+
+[[datasets.glofas.postprocess]]
+name = "per_unit_area"
+variables = ["dis24"]
+factor = 86400.0
+radius = 6378100.0
+
+[[datasets.glofas.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = false}
+conservation_tolerance = 1e-6
+grid = "target"
+
+# No river south of GloFAS's domain (-60): 0 there, where the regridding leaves NaN.
+[[datasets.glofas.postprocess]]
+name = "fillna"
+value = 0.0
+
+[[datasets.glofas.postprocess]]
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
+
+[[datasets.glofas.postprocess]]
+name = "rename"
+name_dict = {dis24 = "dis24_outlets"}
+
+[[datasets.glofas.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.glofas.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.glofas.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ==== GLO12 SECTION ====
+
+# GLO12 (GLOBAL_ANALYSISFORECAST_PHY_001_024): a best-estimate series by valid time, overwritten
+# by each daily release (out by about 06:00 UTC), which covers its day and the 9 after. A run is
+# its own forecast only if read before the next release (flag glo12_forecast). Level 49 (5728
+# m) is dropped, as in the historical dataset.
+[datasets.glo12]
+flag = "glo12_forecast"
+
+[[datasets.glo12.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["thetao"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glo12.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy-so_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["so"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glo12.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy-cur_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["uo", "vo"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glo12.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["zos"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glo12.postprocess]]
+name = "isel"
+depth = {start = 0, stop = 49}
+
+[[datasets.glo12.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = true, nan_threshold = 1.0}
+grid = "target"
+
+[[datasets.glo12.postprocess]]
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
+
+[[datasets.glo12.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.glo12.postprocess]]
+name = "drop_var_attrs"
+variables = ["depth", "lat", "lon", "time"]
+
+[[datasets.glo12.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Sea ice over the sea part of each cell: concentration, and concentration times thickness
+# (volume per area) and times velocity, which regrid conservatively; GLO12's thickness and
+# velocity (means over the ice) are sivol / siconc and usic / siconc. Missing (no ice) counts
+# as 0 here; the global steps divide by the sea fraction.
+[datasets.glo12_seaice]
+flag = "glo12_forecast"
+
+[[datasets.glo12_seaice.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["sithick", "siconc", "usi", "vsi"]
+dataset_version = "202406"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glo12_seaice.postprocess]]
+name = "products"
+sivol = ["siconc", "sithick"]
+usic = ["siconc", "usi"]
+vsic = ["siconc", "vsi"]
+
+[[datasets.glo12_seaice.postprocess]]
+name = "select_variables"
+variables = ["siconc", "sivol", "usic", "vsic"]
+
+[[datasets.glo12_seaice.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = false}
+grid = "target"
+
+[[datasets.glo12_seaice.postprocess]]
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
+
+[[datasets.glo12_seaice.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.glo12_seaice.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.glo12_seaice.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Static: GLO12's own (maintainer, 23 Nov 2026), whose bathymetry and sea differ from GLORYS12's
+# in about 0.4 % of the native cells: each dataset holds its own mask. The sea fraction (GLO12's
+# 3D mask regridded: the share of each cell where the model has a sea cell) and the mean depth
+# (land as 0: the column's water); the sea mask (any water) for the global steps, not published.
+[[datasets.glo12_static.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["deptho", "mask"]
+dataset_version = "202211"
+dataset_part = "bathy"
+service = "static-arco"
+
+# The layer thicknesses (depth only: regrid passes them through), for the depth bounds and the
+# sea volumes: GLORYS12's, the nominal thicknesses of the levels GLO12 shares (GLO12's static e3t
+# varies with the bathymetry: partial bottom cells; its largest value per level is GLORYS12's).
+# Its depths differ from the bathymetry's by float32 rounding (at most 0.5 mm).
+[[datasets.glo12_static.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["e3t"]
+dataset_version = "202311"
+dataset_part = "coords"
+service = "static-arco"
+coordinate_tolerance = 0.001
+
+[[datasets.glo12_static.postprocess]]
+name = "isel"
+depth = {start = 0, stop = 49}
+
+[[datasets.glo12_static.postprocess]]
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
+
+[[datasets.glo12_static.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = false}
+grid = "target"
+
+# No sea south of GLO12's domain (-80): 0 there, where the regridding leaves NaN.
+[[datasets.glo12_static.postprocess]]
+name = "fillna"
+value = 0.0
+
+[[datasets.glo12_static.postprocess]]
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
+
+[[datasets.glo12_static.postprocess]]
+name = "rename"
+name_dict = {mask = "seafrac"}
+
+[[datasets.glo12_static.postprocess]]
+name = "fraction_mask"
+fraction = "seafrac"
+mask_name = "sea"
+threshold = 0.0
+tolerance = 1e-6
+
+[[datasets.glo12_static.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+# Cell geometry: CF bounds (horizontal: the cells conservative regridding assumes; depth: the
+# layers of e3t), the cell areas on GLORYS12's sphere (its static e1t and e2t imply a radius of
+# 6,378,100 m; GLO12's, 9,250 m per 1/12 deg, 6,359,800 m: the historical dataset's radius is
+# kept, so the areas are the same), and the sea volume of each cell.
+[[datasets.glo12_static.postprocess]]
+name = "cell_bounds"
+latitude_dim = "lat"
+longitude_dim = "lon"
+depth_dim = "depth"
+thickness = "e3t"
+
+[[datasets.glo12_static.postprocess]]
+name = "cell_area"
+variable = "areacello"
+latitude_dim = "lat"
+longitude_dim = "lon"
+radius = 6378100.0
+
+[[datasets.glo12_static.postprocess]]
+name = "products"
+volcello = ["seafrac", "e3t", "areacello"]
+
+[[datasets.glo12_static.postprocess]]
+name = "drop_vars"
+names = ["e3t"]
+
+[[datasets.glo12_static.postprocess]]
+name = "astype"
+areacello = {dtype = "float32", casting = "same_kind"}
+volcello = {dtype = "float32", casting = "same_kind"}
+
+[[datasets.glo12_static.postprocess]]
+name = "drop_var_attrs"
+variables = ["depth", "lat", "lon"]
+
+[[datasets.glo12_static.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ==== SAVING SECTION ====
+
+[[postprocess]]
+name = "transpose"
+dims = ["time", "depth", "lat", "lon", "bnds"]
+
+# Sea ice over the sea part of each cell (2D fields: the surface fraction).
+[[postprocess]]
+name = "divide_by"
+variables = ["siconc", "sivol", "usic", "vsic"]
+by = "seafrac"
+
+# Sea cells without values (GLO12's gaps): the nearest value above, then 0 if none.
+[[postprocess]]
+name = "fill_from_above"
+variables = ["thetao", "so", "uo", "vo"]
+depth_dim = "depth"
+mask_name = "sea"
+
+[[postprocess]]
+name = "masked_fill"
+mask_name = "sea"
+fill_value = 0.0
+variables = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[[postprocess]]
+name = "apply_mask"
+mask_name = "sea"
+variables = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[[postprocess]]
+name = "drop_vars"
+names = ["sea"]
+
+[[postprocess]]
+name = "assign_var_attrs"
+
+[postprocess.lat]
+standard_name = "latitude"
+long_name = "latitude"
+units = "degrees_north"
+unit_long = "Degrees North"
+axis = "Y"
+bounds = "lat_bnds"
+
+[postprocess.lon]
+standard_name = "longitude"
+long_name = "longitude"
+units = "degrees_east"
+unit_long = "Degrees East"
+axis = "X"
+bounds = "lon_bnds"
+
+[postprocess.time]
+standard_name = "time"
+long_name = "time"
+axis = "T"
+
+[postprocess.depth]
+standard_name = "depth"
+long_name = "ocean depth below geoid"
+units = "m"
+positive = "down"
+axis = "Z"
+bounds = "depth_bnds"
+
+[postprocess.seafrac]
+long_name = "sea fraction"
+units = "1"
+comment = "Share of the cell's area where GLO12 has a sea cell at this level: its 3D mask regridded conservatively. Static. Values exist exactly where seafrac > 0. Sea volume of the cell: volcello = seafrac x layer thickness (depth_bnds) x areacello."
+
+[postprocess.deptho]
+standard_name = "sea_floor_depth_below_geoid"
+long_name = "mean sea-floor depth"
+units = "m"
+comment = "GLO12 deptho averaged conservatively over the cell, land as 0: the column's water volume per unit area."
+
+[postprocess.thetao]
+standard_name = "sea_water_potential_temperature"
+long_name = "Temperature"
+units = "degrees_C"
+unit_long = "Degrees Celsius"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.so]
+standard_name = "sea_water_salinity"
+long_name = "Salinity"
+units = "1e-3"
+unit_long = "Practical Salinity Unit"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.uo]
+standard_name = "eastward_sea_water_velocity"
+long_name = "Eastward velocity"
+units = "m s-1"
+unit_long = "Meters per second"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.vo]
+standard_name = "northward_sea_water_velocity"
+long_name = "Northward velocity"
+units = "m s-1"
+unit_long = "Meters per second"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.zos]
+standard_name = "sea_surface_height_above_geoid"
+long_name = "Sea surface height"
+units = "m"
+unit_long = "Meters"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+
+[postprocess.areacello]
+standard_name = "cell_area"
+long_name = "cell area"
+units = "m2"
+comment = "Area of the whole cell (land included) on a sphere of radius 6,378,100 m, the radius of GLORYS12's static cell sizes (e1t, e2t), as in the historical dataset. The cell's sea area at the surface is seafrac x areacello."
+
+[postprocess.volcello]
+standard_name = "ocean_volume"
+long_name = "sea water volume"
+units = "m3"
+comment = "Sea water volume of the cell: seafrac x layer thickness (depth_bnds, from GLORYS12's e3t: GLO12's levels) x areacello. Sums of value x volcello are volume integrals (heat content, say); weights of a loss by water volume."
+
+[postprocess.siconc]
+standard_name = "sea_ice_area_fraction"
+long_name = "sea-ice concentration"
+units = "1"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "Ice area over the cell's sea area (GLO12 siconc, no ice as 0)."
+
+[postprocess.sivol]
+standard_name = "sea_ice_thickness"
+long_name = "sea-ice volume per area"
+units = "m"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "GLO12 siconc x sithick averaged over the cell's sea part. GLO12's thickness (mean over the ice) is sivol / siconc where siconc > 0."
+
+[postprocess.usic]
+long_name = "sea-ice concentration times eastward velocity"
+units = "m s-1"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "GLO12 siconc x usi averaged over the cell's sea part. The ice velocity (mean over the ice) is usic / siconc where siconc > 0."
+
+[postprocess.vsic]
+long_name = "sea-ice concentration times northward velocity"
+units = "m s-1"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "GLO12 siconc x vsi averaged over the cell's sea part. The ice velocity (mean over the ice) is vsic / siconc where siconc > 0."
+
+[postprocess.dis24_outlets]
+long_name = "river discharge into the ocean per unit area"
+units = "m"
+cell_measures = "area: areacello"
+comment = "GloFAS forecast discharge (control member, operational model; mean of 24 h) at the pits of its drainage network (local drain direction 5, LDD v4.0), divided by the cell's area: metres of water per day over the whole cell, as a daily precipitation total. Discharge (m3/s) = value x cell area / 86400. Pits of basins without outlet (Caspian, Lake Chad) are included."
+
+[[postprocess]]
+name = "assign_attrs"
+title = "ARCO-OCEAN forecasts: Analysis-Ready Cloud-Optimized Ocean Forecasts"
+summary = "Daily forecast runs (10 lead days, the last five years of runs) of ocean physical properties, sea ice, and atmospheric/hydrological forcing, on the grid and with the variables of the ARCO-OCEAN dataset, for data-driven ocean models."
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Merged operational forecasts: CMEMS GLO12 analysis and forecast (ocean & sea ice), ECMWF IFS HRES from the ECMWF open data (atmosphere; static fields from ERA5), and the GloFAS forecast control member (river discharge)."
+history = "Daily 00 UTC runs regridded conservatively from the native grids to a global 0.25 deg regular grid; written as an Icechunk repository (Zarr v3), in chunks of one run, lead day and level, sharded by run (all lead days and levels); a rolling window of runs."
+license = "CC-BY-4.0"
+attribution = "Contains modified ECMWF open data (IFS, CC-BY-4.0), Copernicus Climate Change Service (C3S) information (ERA5 static fields), E.U. Copernicus Marine Service information (CMEMS, GLO12) and Copernicus Emergency Management Service (CEMS) information (GloFAS). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
+references = "https://github.com/inogs/arco-ocean"
+featureType = "grid"
+
+# The extent attributes (ACDD) from the coordinates: the time coverage is the whole output's.
+[[postprocess]]
+name = "coverage_attrs"
+vertical_dim = "depth"
+
+# Checked on each block before its commit: a block that fails is not committed, and the run
+# can resume once the cause is fixed. `arco-make validate` checks a whole output.
+[checks.valid_time_coordinate]
+freq = "1D"
+
+[checks.valid_global_ecmwf_coordinates]
+latitude_dim = "lat"
+longitude_dim = "lon"
+
+# Ocean and sea-ice fields exactly inside the sea; every other variable everywhere.
+[checks.ensure_no_nans]
+exact = true
+seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[checks.attributes]
+
+[save]
+# Versions kept: the current one and the previous one (to go back a day). The runs a new one
+# drops from the window go with the version that held them.
+keep_versions = 2
+chunks = {init_time = 1, lead_time = 1, depth = 1, lat = -1, lon = -1}
+# A shard per run (all lead days and levels, a lead day's levels next to each other): the
+# rolling window moves whole objects, one run each.
+shards = {init_time = 1, lead_time = -1, depth = -1, lat = -1, lon = -1}
+shard_order = "lexicographic"
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
