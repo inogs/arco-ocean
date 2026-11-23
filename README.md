@@ -225,7 +225,21 @@ The first version of ARCO-OCEAN (0.25°, 10 levels, waves, Zarr version 2) stays
 
 ## License
 
-This dataset is released for use under the CC-BY license. Highlights and key features of the license are provided [here](https://creativecommons.org/licenses/by/4.0/). Full legal text is provided [here](https://creativecommons.org/licenses/by/4.0/legalcode). It contains modified Copernicus information: ERA5 from the Copernicus Climate Change Service, GLORYS12 from the Copernicus Marine Service, GloFAS from the Copernicus Emergency Management Service. Their attribution is in the dataset's `attribution` attribute, and must accompany any redistribution of the data or of products derived from them.
+The datasets (historical, statistics and forecasts) are released under the Creative Commons Attribution 4.0 International licence, CC BY 4.0 ([summary](https://creativecommons.org/licenses/by/4.0/), [legal code](https://creativecommons.org/licenses/by/4.0/legalcode)). They are derived from the sources below, whose licences ask that they be credited: each dataset's global `attribution` attribute does so, in the forms the licences prescribe, and must accompany any redistribution of the data or of products derived from them.
+
+| Source | In | Licence | Credit required |
+|---|---|---|---|
+| GLORYS12, Copernicus Marine Service ([10.48670/moi-00021](https://doi.org/10.48670/moi-00021)) | historical, statistics: ocean, sea ice | [Copernicus Marine Service licence](https://marine.copernicus.eu/user-corner/service-commitments-and-licence) | "Generated using E.U. Copernicus Marine Service Information", with the DOIs, visible where the data are accessed |
+| GLO12, Copernicus Marine Service ([10.48670/moi-00016](https://doi.org/10.48670/moi-00016)) | forecasts: ocean, sea ice | as GLORYS12 | as GLORYS12 |
+| ERA5, Copernicus Climate Change Service ([10.24381/cds.adbb2d47](https://doi.org/10.24381/cds.adbb2d47)) | historical, statistics: atmosphere; forecasts: static fields | CC BY 4.0 | "Contains modified Copernicus Climate Change Service information [year]" |
+| GloFAS v5.0 historical ([10.24381/cds.a4fdd6b9](https://doi.org/10.24381/cds.a4fdd6b9)) and GloFAS forecast ([10.24381/cds.ff1aef77](https://doi.org/10.24381/cds.ff1aef77)), Copernicus Emergency Management Service | river discharge | [CEMS-FLOODS datasets licence](https://ewds.climate.copernicus.eu/licences/cems-floods) | "Contains modified Copernicus Emergency Management Service information [year]" |
+| ECMWF IFS open data ([data.ecmwf.int](https://data.ecmwf.int/forecasts/), read from its copy on AWS) | forecasts: atmosphere | CC BY 4.0 and the [ECMWF terms of use](https://apps.ecmwf.int/datasets/licences/general/) | "based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)" |
+
+The GloFAS forecasts are given for information only: they are not flood warnings. The code of this repository (scripts, recipes, documentation, tutorials) is released under the MIT licence ([LICENSE](LICENSE)).
+
+## Use of AI tools
+
+The recipes, scripts and documentation of this repository have been written largely with AI coding assistants (Claude Code, by Anthropic), directed and reviewed by the maintainers, as has [arco-make](https://github.com/stefanocampanella/arco-make), the tool that produces the datasets. The recipes' outputs were checked on real data before the production run (arco-make's logbook records the checks). The commits made with an assistant name it in a `Co-Authored-By` trailer. The maintainers are responsible for the datasets and the code as published: please report problems as issues.
 
 ## Suggested attribution
 
