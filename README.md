@@ -142,11 +142,46 @@ scripts/download.sh --extend --end 2026-10-01 historical_res-0p25
 Each commit of a repository records how it was made, in its metadata: the version and commit of
 arco-make, the versions of the packages that decide the values, and the recipe's fingerprint.
 
+### Forecasts
+
+The forecast repositories (`forecast/res=<res>`, recipes `configs/download/forecast_res-<res>.toml`)
+hold daily forecast runs on the grid and with the variables of the historical dataset: the
+00 UTC run of each day, its 10 lead days, the last five years of runs. The sources are the
+forecasts of the historical ones: GLO12, the Copernicus Marine analysis and forecast, for
+GLORYS12 (with GLO12's own static fields: its sea differs from GLORYS12's in about 0.4 % of the
+native cells); IFS HRES from ECMWF's open data for ERA5 (the static `z` and `lsm` stay ERA5's);
+the GloFAS forecast's control member for GloFAS's discharge. `scripts/forecast.sh` collects
+them at every resolution: the first time with `--start`, from the end of the historical dataset,
+then every day, adding the runs after the last stored one (a missed day is caught up).
+
+```bash
+# The first time: every run from the end of the historical dataset to today's.
+scripts/forecast.sh --start 2026-07-01
+# Every day, from cron, once every source has published today's run (on 23 Nov 2026: GLO12 by
+# 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between 09:45 and 10:00):
+# 30 10 * * * cd /path/to/arco-ocean && scripts/forecast.sh >> logs/forecast/cron.log 2>&1
+```
+
+A run whose sources have not all published it yet (younger than two days) is not stored: the
+runs before it are, and it is tried again (every 30 minutes, 6 times), else collected the next
+day; older, a source without it gives NaN, flagged. Collections never overlap. GLO12 overwrites its past
+releases: a run collected after its day (the backfill, a missed day) holds the values of later
+releases. Each component has a flag variable (`ifs_forecast`, `glofas_forecast`,
+`glo12_forecast`; `init_time` x `lead_time`), true where its values are its run's own forecast,
+false where they come from later releases or are missing (a source without the run: NaN).
+
 ## Data format
 
 Each resolution is an [Icechunk](https://icechunk.io) repository: a [Zarr version 3](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html) dataset with versions, whose `main` branch is the current one. The dataset has the dimensions `time`, `depth`, `lat` and `lon` (and `bnds`, for the cell bounds), each with its coordinate. The latitudes increase within [-90, 90], and the longitudes are in the range [0, 360), following the [convention used by the ECMWF](https://confluence.ecmwf.int/display/CKB/ERA5%3A+What+is+the+spatial+reference#ERA5:Whatisthespatialreference-Coordinatesystem); the grid's polar rows are centred on the poles and half as tall. The depth coordinate is GLORYS12's level depths. The time coordinate uses the proleptic Gregorian calendar and unit "days since 1993-01-01" (UTC), one stamp per day at 00:00.
 
 Variables are single precision floating point numbers, stored with time as the leading (slowest varying) dimension, followed by depth (when present), then latitude, and finally longitude. A chunk is one day and one level of a variable over the whole grid; chunks are grouped in shards of 8 days and all levels, a day's levels next to each other, so a whole profile of a day is read in a few requests. Chunks are compressed with Blosc (LZ4, level 1, byte shuffle). Static variables (`seafrac`, `deptho`, the cell measures, `z`, `lsm`) have no time dimension.
+
+The forecast repositories have the dimensions `init_time` (the run, 00 UTC of its day),
+`lead_time` (0 to 9 days), `depth`, `lat` and `lon`, and the coordinate `valid_time` (`init_time`
+\+ `lead_time`, the day a value is for, as `time` in the historical dataset). A chunk is one run,
+lead day and level over the whole grid; a shard holds a whole run. IFS daily means take 8
+samples a day to day 5, then 4 (ERA5's: 24); the GloFAS forecast is the operational model (v4.x
+in November 2026), the historical dataset GloFAS v5.0.
 
 The statistics (the climatology and the anomaly standard deviation, from `scripts/climatology.sh`) are computed over the reference period 1993-2023, a 30-year normal as climatological normals are. Models evaluated on years inside it see them in their normalization.
 
