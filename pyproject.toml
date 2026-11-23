@@ -11,7 +11,7 @@ dependencies = [
     "obstore",
     "dask",
     "distributed",
-    "jupyter",
+    "marimo",
     "pip",
     "matplotlib",
     "cartopy",
@@ -41,9 +41,17 @@ notes = [
 target-version = "py313"
 line-length = 100
 indent-width = 2
-# The Jupyter tutorial is left as written (to be replaced by a marimo notebook).
-extend-exclude = ["tutorials/*.ipynb"]
+
+[tool.ruff.format]
+# marimo writes its notebooks in its own form (4-space indentation) whenever they are saved.
+exclude = ["tutorials/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 ignore = ["E501", "B028"]
+
+[tool.ruff.lint.per-file-ignores]
+# marimo notebooks: a cell shows its last expression (B018); names come as cell arguments, so ruff
+# reads the strings of `Literal[...]` as names (F821; `marimo check` checks the cells' names); the
+# tutorial's code is kept as adapted (F841).
+"tutorials/*.py" = ["B018", "F821", "F841"]

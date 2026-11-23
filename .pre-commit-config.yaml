@@ -17,6 +17,15 @@ repos:
       - id: ruff-format
         args: [--check]
 
+  # The marimo notebooks: names defined once, cells that form a graph, Markdown as marimo writes it.
+  - repo: local
+    hooks:
+      - id: marimo-check
+        name: marimo check
+        entry: uvx marimo@0.25.2 check
+        language: system
+        files: ^tutorials/.*\.py$
+
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:

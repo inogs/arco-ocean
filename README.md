@@ -228,7 +228,9 @@ The first version of ARCO-OCEAN (0.25°, 10 levels, waves, Zarr version 2) stays
 
 ## Tutorials
 
-1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.ipynb) (written for the first version: its paths and variables are those of the 0.25°, 10-level dataset)
+1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.py) (written for the first version: its paths and variables are those of the 0.25°, 10-level dataset)
+
+The tutorials are [marimo](https://marimo.io) notebooks: `uvx marimo edit --sandbox tutorials/oni.py` opens one in an environment of its own, with the dependencies it lists.
 
 ## License
 
@@ -242,7 +244,7 @@ The datasets (historical, statistics and forecasts) are released under the Creat
 | GloFAS v5.0 historical ([10.24381/cds.a4fdd6b9](https://doi.org/10.24381/cds.a4fdd6b9)) and GloFAS forecast ([10.24381/cds.ff1aef77](https://doi.org/10.24381/cds.ff1aef77)), Copernicus Emergency Management Service | river discharge | [CEMS-FLOODS datasets licence](https://ewds.climate.copernicus.eu/licences/cems-floods) | "Contains modified Copernicus Emergency Management Service information [year]" |
 | ECMWF IFS open data ([data.ecmwf.int](https://data.ecmwf.int/forecasts/), read from its copy on AWS) | forecasts: atmosphere | CC BY 4.0 and the [ECMWF terms of use](https://apps.ecmwf.int/datasets/licences/general/) | "based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)" |
 
-The GloFAS forecasts are given for information only: they are not flood warnings. The code of this repository (scripts, recipes, documentation, tutorials) is released under the MIT licence ([LICENSE](LICENSE)).
+The GloFAS forecasts are given for information only: they are not flood warnings. The code of this repository (scripts, recipes, documentation) is released under the MIT licence ([LICENSE](LICENSE)); the ONI tutorial, adapted from [Climatematch](https://comptools.climatematch.io/)'s, under its licences, CC BY 4.0 for the text and the BSD 3-Clause License for the code.
 
 ## Use of AI tools
 
