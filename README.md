@@ -126,6 +126,8 @@ The [notes on coarsening ocean datasets](docs/coarsen-ocean-datasets.md) explain
 
 Every block of the download is checked before it is written: a complete daily time axis, the grid convention, ocean and sea ice values exactly where `seafrac > 0` and every other variable everywhere, and a `long_name` and `units` on every variable, no two variables sharing a `long_name`. `configs/validate/historical.toml` checks a whole dataset the same way, given its dates: `arco-make validate --start 1993-01-01 --end 2026-07-01 configs/validate/historical.toml DATASET`.
 
+The sources' versions, the limitations their producers document, and how they fit together (the ocean forced by another atmosphere before 2019, climatological runoff) are in [docs/sources.md](docs/sources.md).
+
 ## Producing and extending the dataset
 
 The recipes have no dates: the command gives them, so one recipe serves the first download and
