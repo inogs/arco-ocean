@@ -513,7 +513,7 @@ comment = "Share of the cell's area where GLORYS12 has a sea cell at this level:
 standard_name = "sea_floor_depth_below_geoid"
 long_name = "mean sea-floor depth"
 units = "m"
-comment = "GLORYS12 deptho averaged conservatively over the cell, land as 0: the column's water volume per unit area."
+comment = "GLORYS12 deptho averaged conservatively over the cell, land as 0. GLORYS12's static deptho is not exactly the bottom of the water column its mask and layers give (the sum over levels of volcello / areacello): in each column it lies within about half a level of that bottom, above or below."
 
 [postprocess.thetao]
 standard_name = "sea_water_potential_temperature"

@@ -45,7 +45,7 @@ Values are averages over the sea part of each cell. GLORYS12's sea ice thickness
 | Variable name                        | Description                                                             | Data type | Units |
 |--------------------------------------|-------------------------------------------------------------------------|-----------|-------|
 | `seafrac`                            | Share of the cell where GLORYS12 has a sea cell, per level (static)     | float32   | -     |
-| `deptho`                             | Mean sea-floor depth, land as 0: the column's water (static)            | float32   | m     |
+| `deptho`                             | Mean sea-floor depth, land as 0 (static; see its comment)               | float32   | m     |
 | `areacello`                          | Cell area, on GLORYS12's sphere, radius 6,378,100 m (static)            | float32   | m²    |
 | `volcello`                           | Sea water volume of the cell: `seafrac` × layer thickness × `areacello` | float32   | m³    |
 | `lat_bnds`, `lon_bnds`, `depth_bnds` | CF cell bounds (depth: GLORYS12's layer faces)                          | float32   | ° / m |
