@@ -157,9 +157,10 @@ then every day, adding the runs after the last stored one (a missed day is caugh
 ```bash
 # The first time: every run from the end of the historical dataset to today's.
 scripts/forecast.sh --start 2026-07-01
-# Every day, from cron, once every source has published today's run (on 23 Nov 2026: GLO12 by
-# 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between 09:45 and 10:00):
-# 30 10 * * * cd /path/to/arco-ocean && scripts/forecast.sh >> logs/forecast/cron.log 2>&1
+# Every day, from cron, two hours after the last source published today's run on 23 Nov 2026
+# (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between 09:45 and 10:00), so that
+# a late release still makes it; a run still missing is tried again (below), else the next day:
+# 0 12 * * * cd /path/to/arco-ocean && scripts/forecast.sh >> logs/forecast/cron.log 2>&1
 ```
 
 A run whose sources have not all published it yet (younger than two days) is not stored: the
