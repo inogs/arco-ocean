@@ -673,7 +673,7 @@ creator_name = "OGS ARCO-OCEAN Development Team"
 source = "Merged retrospective reanalyses and hindcasts: CMEMS GLORYS12 (ocean & sea ice), ECMWF ERA5 (atmosphere), and GloFAS v5.0 (river discharge)."
 history = "Regridded conservatively from the native grids to a global 0.5 deg regular grid; written as an Icechunk repository (Zarr v3), in chunks of one day and level, sharded by 8 days and all levels."
 license = "CC-BY-4.0"
-attribution = "Contains modified Copernicus Climate Change Service (C3S) information (ERA5), E.U. Copernicus Marine Service information (CMEMS, GLORYS12) and Copernicus Emergency Management Service (CEMS) information (GloFAS). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
+attribution = "Generated using E.U. Copernicus Marine Service Information (GLORYS12, https://doi.org/10.48670/moi-00021). Contains modified Copernicus Climate Change Service information 2026 (ERA5, https://doi.org/10.24381/cds.adbb2d47, CC BY 4.0) and modified Copernicus Emergency Management Service information 2026 (GloFAS v5.0, https://doi.org/10.24381/cds.a4fdd6b9). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
 references = "https://github.com/inogs/arco-ocean"
 featureType = "grid"
 
