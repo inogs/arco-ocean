@@ -376,10 +376,10 @@ dataset_version = "202211"
 dataset_part = "bathy"
 service = "static-arco"
 
-# The layer thicknesses (depth only: regrid passes them through), for the depth bounds and the
-# sea volumes: GLORYS12's, the nominal thicknesses of the levels GLO12 shares (GLO12's static e3t
-# varies with the bathymetry: partial bottom cells; its largest value per level is GLORYS12's).
-# Its depths differ from the bathymetry's by float32 rounding (at most 0.5 mm).
+# The layer thicknesses (depth only: regrid passes them through), for the depth bounds: CF
+# bounds of the depth coordinate, one pair per level, the nominal layers GLO12 shares with
+# GLORYS12 (GLO12's own e3t, below, is 3D). Its depths differ from the bathymetry's by float32
+# rounding (at most 0.5 mm).
 [[datasets.glo12_static.parts]]
 filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_static"
 engine = "copernicusmarine"
@@ -387,6 +387,20 @@ variables = ["e3t"]
 dataset_version = "202311"
 dataset_part = "coords"
 service = "static-arco"
+coordinate_tolerance = 0.001
+
+# GLO12's cell thicknesses, for the sea volumes: 3D, the bottom cell of a column thinner than its
+# level where the sea floor cuts it (partial bottom cells: 1.6 % of the sea cells, -0.75 % of the
+# sea volume), those of level 48 thicker where they take in level 49 (no sea there in GLO12's
+# mask), 0 in 1,275 cells of levels 6-9 its mask calls sea. NaN on land.
+[[datasets.glo12_static.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_anfc_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["e3t"]
+dataset_version = "202211"
+dataset_part = "coords"
+service = "static-arco"
+rename = {e3t = "e3t_cell"}
 coordinate_tolerance = 0.001
 
 [[datasets.glo12_static.postprocess]]
@@ -397,6 +411,20 @@ depth = {start = 0, stop = 49}
 name = "astype"
 dtype = "float32"
 casting = "same_kind"
+
+# The water of each native cell: its thickness where the mask has sea, 0 on land; regridded
+# conservatively, the mean water thickness of each cell and level (land as 0).
+[[datasets.glo12_static.postprocess]]
+name = "fillna"
+value = {e3t_cell = 0.0}
+
+[[datasets.glo12_static.postprocess]]
+name = "products"
+water_thickness = ["mask", "e3t_cell"]
+
+[[datasets.glo12_static.postprocess]]
+name = "drop_vars"
+names = ["e3t_cell"]
 
 [[datasets.glo12_static.postprocess]]
 name = "regrid"
@@ -434,7 +462,8 @@ name_dict = {latitude = "lat", longitude = "lon"}
 # Cell geometry: CF bounds (horizontal: the cells conservative regridding assumes; depth: the
 # layers of e3t), the cell areas on GLORYS12's sphere (its static e1t and e2t imply a radius of
 # 6,378,100 m; GLO12's, 9,250 m per 1/12 deg, 6,359,800 m: the historical dataset's radius is
-# kept, so the areas are the same), and the sea volume of each cell.
+# kept, so the areas are the same), and the sea volume of each cell: its mean water thickness
+# (GLO12's partial bottom cells) x its area.
 [[datasets.glo12_static.postprocess]]
 name = "cell_bounds"
 latitude_dim = "lat"
@@ -451,11 +480,11 @@ radius = 6378100.0
 
 [[datasets.glo12_static.postprocess]]
 name = "products"
-volcello = ["seafrac", "e3t", "areacello"]
+volcello = ["water_thickness", "areacello"]
 
 [[datasets.glo12_static.postprocess]]
 name = "drop_vars"
-names = ["e3t"]
+names = ["e3t", "water_thickness"]
 
 [[datasets.glo12_static.postprocess]]
 name = "astype"
@@ -539,13 +568,13 @@ bounds = "depth_bnds"
 [postprocess.seafrac]
 long_name = "sea fraction"
 units = "1"
-comment = "Share of the cell's area where GLO12 has a sea cell at this level: its 3D mask regridded conservatively. Static. Values exist exactly where seafrac > 0. Sea volume of the cell: volcello = seafrac x layer thickness (depth_bnds) x areacello."
+comment = "Share of the cell's area where GLO12 has a sea cell at this level: its 3D mask regridded conservatively. Static. Values exist exactly where seafrac > 0. Sea volume of the cell: volcello (GLO12's partial bottom cells counted)."
 
 [postprocess.deptho]
 standard_name = "sea_floor_depth_below_geoid"
 long_name = "mean sea-floor depth"
 units = "m"
-comment = "GLO12 deptho averaged conservatively over the cell, land as 0: the column's water volume per unit area."
+comment = "GLO12 deptho averaged conservatively over the cell, land as 0. GLO12's static deptho is not the bottom of the water column its mask and cell thicknesses give (the sum over levels of volcello / areacello): in every column it lies about half a level below that bottom, near the centre of the first level the mask calls land (median 200 m deeper, up to about 230 m)."
 
 [postprocess.thetao]
 standard_name = "sea_water_potential_temperature"
@@ -597,7 +626,7 @@ comment = "Area of the whole cell (land included) on a sphere of radius 6,378,10
 standard_name = "ocean_volume"
 long_name = "sea water volume"
 units = "m3"
-comment = "Sea water volume of the cell: seafrac x layer thickness (depth_bnds, from GLORYS12's e3t: GLO12's levels) x areacello. Sums of value x volcello are volume integrals (heat content, say); weights of a loss by water volume."
+comment = "Sea water volume of the cell: GLO12's cell thicknesses (its static e3t, 3D) where it has sea, averaged conservatively over the cell (land as 0), x areacello. At most seafrac x layer thickness (depth_bnds) x areacello, less where bottom cells are partial; except at level 48, whose bottom cells take in level 49 (no sea there in GLO12) and reach below depth_bnds; 0 where GLO12's sea cells all have a static e3t of 0 (levels 6-9: 1,275 native cells its mask calls sea). Sums of value x volcello are volume integrals (heat content, say); weights of a loss by water volume."
 
 [postprocess.siconc]
 standard_name = "sea_ice_area_fraction"

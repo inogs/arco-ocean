@@ -149,7 +149,10 @@ hold daily forecast runs on the grid and with the variables of the historical da
 00 UTC run of each day, its 10 lead days, the last five years of runs. The sources are the
 forecasts of the historical ones: GLO12, the Copernicus Marine analysis and forecast, for
 GLORYS12 (with GLO12's own static fields: its sea differs from GLORYS12's in about 0.4 % of the
-native cells); IFS HRES from ECMWF's open data for ERA5 (the static `z` and `lsm` stay ERA5's);
+native cells, and `volcello` counts its partial bottom cells, which GLORYS12's static product does
+not give: 0.75 % less water in all, up to 7 % less in the deepest levels, more in level 48, which
+takes in level 49; the `deptho` comments tell how each product's sea floor differs from its
+water column); IFS HRES from ECMWF's open data for ERA5 (the static `z` and `lsm` stay ERA5's);
 the GloFAS forecast's control member for GloFAS's discharge. `scripts/forecast.sh` collects
 them at every resolution: the first time with `--start`, from the end of the historical dataset,
 then every day, adding the runs after the last stored one (a missed day is caught up).
