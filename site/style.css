@@ -1,0 +1,242 @@
+/*
+SPDX-FileCopyrightText: 2026 Stefano Campanella
+SPDX-License-Identifier: MIT
+*/
+
+:root {
+  color-scheme: light dark;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --hairline: #e1e0d9;
+  --border: rgba(11, 11, 11, 0.1);
+  --link: #1f5fa8;
+  /* Status colours (fixed): each shown with an icon and a label, never alone. */
+  --downloading: #2a78d6;
+  --finished: #0ca30c;
+  --stale: #fab219;
+  --aborted: #d03b3b;
+  --unknown: #898781;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --hairline: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.1);
+    --link: #7fb2ec;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 60rem;
+  padding: 1.5rem;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+a {
+  color: var(--link);
+}
+
+header {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+header img {
+  border-radius: 12px;
+  flex: none;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+h2 {
+  margin-top: 2.5rem;
+  font-size: 1.35rem;
+}
+
+.tagline {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--ink-2);
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.95rem;
+}
+
+code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: var(--surface);
+}
+
+caption {
+  text-align: left;
+  color: var(--ink-2);
+  padding-bottom: 0.25rem;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+th {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+#status-resolutions td {
+  font-variant-numeric: tabular-nums;
+}
+
+.status-card {
+  --accent: var(--unknown);
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+}
+
+.status-card[data-status="downloading"] {
+  --accent: var(--downloading);
+}
+
+.status-card[data-status="finished"] {
+  --accent: var(--finished);
+}
+
+.status-card[data-status="stale"] {
+  --accent: var(--stale);
+}
+
+.status-card[data-status="aborted"] {
+  --accent: var(--aborted);
+}
+
+.status-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.status-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.status-card[data-status="stale"] .status-icon {
+  color: #0b0b0b;
+}
+
+.status-card[data-status="downloading"] .status-icon {
+  animation: spin 2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-card[data-status="downloading"] .status-icon {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status-label {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.status-detail {
+  margin: 0.5rem 0;
+}
+
+.status-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.5rem 1.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.status-times dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.status-times dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 40rem) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

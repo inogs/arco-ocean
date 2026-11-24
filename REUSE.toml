@@ -1,0 +1,16 @@
+version = 1
+
+# Files that cannot carry an SPDX header (documentation, data, images, lock and citation files).
+# Recipes, scripts, tests, workflows and notebooks carry their own.
+[[annotations]]
+path = [
+  "**.md",
+  "**.cff",
+  "**.lock",
+  "**.png",
+  "pyproject.toml",
+  ".gitignore",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Stefano Campanella"
+SPDX-License-Identifier = "MIT"

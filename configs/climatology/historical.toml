@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# ==== CLIMATOLOGY PARAMETERS ====
+time_dim = "time"
+period = 365
+# Daily bins by day of the year: Feb 29 counts in Feb 28's bin (the lookup rule for consumers).
+bins = "day_of_year"
+# A 30-year normal, as climatological normals are (maintainer, 20 Nov): 1993-2023.
+reference_period = {start = 1993-01-01T00:00:00, end = 2024-01-01T00:00:00}
+window = 29
+weighting = "gaussian"
+weighting_scale = 7
+# Streamed level by level (scripts/climatology.sh runs arco-make --streaming): one series per
+# variable and level, as many at once as fit in memory. A whole 3D variable's statistics at
+# 0.25 deg take about 450 GB; one level's about 9 GB.
+split_dims = ["depth"]
+
+# ==== READING CONFIGURATION ====
+[read]
+engine = "icechunk"  # an output of arco-make
+inline_array = false
+chunks = {time = "auto", depth = 1, lat = -1, lon = -1}
+
+# ==== PREPROCESSING PIPELINES ====
+[[preprocess]]
+name = "drop_static_vars"
+time_dim = "time"
+
+# ==== POSTPROCESSING PIPELINES ====
+# Applied to the computed climatological mean dataset
+[[postprocess_climatology]]
+name = "assign_var_attrs"
+
+[postprocess_climatology.time]
+long_name = "day of a 365-day year (bin)"
+comment = "Bin k is day k of a 365-day year (0 = Jan 1, 364 = Dec 31). In leap years, Feb 29 uses bin 58 (Feb 28) and later days use the bin of the same date: index with the day of year minus 1, minus 1 more after Feb 29 in leap years."
+
+[[postprocess_climatology]]
+name = "assign_attrs"
+title = "ARCO-OCEAN Daily Climatology (1993 - 2023)"
+summary = "Multi-year daily climatological means computed from the daily ARCO-OCEAN dataset over the 1993–2023 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days). Bins are days of a 365-day year (0 = Jan 1): Feb 29 values are pooled with Feb 28 (so that bin holds about a quarter more values) and later days of leap years use the bin of the same date; on Feb 29, use the Feb 28 values."
+id = "https://doi.org/10.5281/zenodo.24471954"
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Derived from the ARCO-OCEAN historical dataset at the same resolution (DOI: 10.5281/zenodo.24471954)"
+history = "Multi-year daily mean of the ARCO-OCEAN historical dataset over 1993–2023, with gaussian smoothing; written as an Icechunk repository (Zarr v3), in chunks of one bin and level, sharded by 8 bins and all levels."
+license = "CC-BY-4.0"
+attribution = "Generated using E.U. Copernicus Marine Service Information (GLORYS12, https://doi.org/10.48670/moi-00021). Contains modified Copernicus Climate Change Service information 2026 (ERA5, https://doi.org/10.24381/cds.adbb2d47, CC BY 4.0) and modified Copernicus Emergency Management Service information 2026 (GloFAS v5.0, https://doi.org/10.24381/cds.a4fdd6b9). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
+references = "https://github.com/inogs/arco-ocean"
+time_coverage_start = "1993-01-01T00:00:00Z"
+time_coverage_end = "2023-12-31T00:00:00Z"
+time_coverage_resolution = "P1D"
+climatology_base_period = "1993 - 2023"
+featureType = "grid"
+
+# The spatial extent (ACDD) from the coordinates; the time coverage above is the reference period.
+[[postprocess_climatology]]
+name = "coverage_attrs"
+vertical_dim = "depth"
+time_dim = false
+
+# Applied to the computed anomaly standard deviation dataset
+[[postprocess_anomaly_std]]
+name = "assign_var_attrs"
+
+[postprocess_anomaly_std.time]
+long_name = "day of a 365-day year (bin)"
+comment = "Bin k is day k of a 365-day year (0 = Jan 1, 364 = Dec 31). In leap years, Feb 29 uses bin 58 (Feb 28) and later days use the bin of the same date: index with the day of year minus 1, minus 1 more after Feb 29 in leap years."
+
+[[postprocess_anomaly_std]]
+name = "assign_attrs"
+title = "ARCO-OCEAN Daily Anomaly Standard Deviations (1993 - 2023)"
+summary = "Multi-year daily anomaly standard deviations computed from the daily ARCO-OCEAN dataset over the 1993–2023 reference period and using gaussian smoothing in a centered window of 29 days (scale factor: 7 days). Bins are days of a 365-day year (0 = Jan 1): Feb 29 values are pooled with Feb 28 (so that bin holds about a quarter more values) and later days of leap years use the bin of the same date; on Feb 29, use the Feb 28 values."
+id = "https://doi.org/10.5281/zenodo.24471954"
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Derived from the ARCO-OCEAN historical dataset at the same resolution (DOI: 10.5281/zenodo.24471954)"
+history = "Multi-year daily anomaly standard deviations of the ARCO-OCEAN historical dataset over 1993–2023, with gaussian smoothing; written as an Icechunk repository (Zarr v3), in chunks of one bin and level, sharded by 8 bins and all levels."
+license = "CC-BY-4.0"
+attribution = "Generated using E.U. Copernicus Marine Service Information (GLORYS12, https://doi.org/10.48670/moi-00021). Contains modified Copernicus Climate Change Service information 2026 (ERA5, https://doi.org/10.24381/cds.adbb2d47, CC BY 4.0) and modified Copernicus Emergency Management Service information 2026 (GloFAS v5.0, https://doi.org/10.24381/cds.a4fdd6b9). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
+references = "https://github.com/inogs/arco-ocean"
+time_coverage_start = "1993-01-01T00:00:00Z"
+time_coverage_end = "2023-12-31T00:00:00Z"
+time_coverage_resolution = "P1D"
+climatology_base_period = "1993 - 2023"
+featureType = "grid"
+
+[[postprocess_anomaly_std]]
+name = "coverage_attrs"
+vertical_dim = "depth"
+time_dim = false
+
+# ==== SAVING CONFIGURATION ====
+[save]
+# Versions kept: the current one (statistics can be recomputed).
+keep_versions = 1
+chunks = {time = 1, depth = 1, lat = -1, lon = -1}
+# The layout of the historical datasets: shards of 8 bins and all levels, a bin's levels together.
+shards = {time = 8, depth = -1, lat = -1, lon = -1}
+shard_order = "lexicographic"
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
