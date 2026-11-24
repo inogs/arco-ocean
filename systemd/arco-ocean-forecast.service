@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+#
+# The daily forecast collection (scripts/forecast.sh), started by arco-ocean-forecast.timer: a
+# systemd user unit, linked from the checkout by scripts/install_units.sh, which also writes this
+# machine's part in a drop-in (arco-ocean-forecast.service.d/local.conf): the checkout
+# (WorkingDirectory) and the options of forecast.sh (FORECAST_OPTIONS: --image or --virtual-env,
+# --env-file, ...). Logs: journalctl --user -u arco-ocean-forecast, and logs/ in the checkout.
+
+[Unit]
+Description=ARCO-OCEAN daily forecast collection
+Documentation=https://github.com/inogs/arco-ocean#forecasts
+
+[Service]
+Type=oneshot
+# uv, if downloads run in a virtual environment, is in ~/.local/bin.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=FORECAST_OPTIONS=
+ExecStart=/bin/bash scripts/forecast.sh --status-url s3://ogs-arco-ocean/status/forecast.json $FORECAST_OPTIONS
+# A collection that hangs is stopped: all its processes get SIGTERM, its heartbeat ends aborted
+# and the next collection resumes (--extend). Waiting for late releases takes up to 7.5 hours
+# (6 attempts, 30 minutes apart, per resolution); a backfill runs by hand, not from here.
+TimeoutStartSec=20h
+TimeoutStopSec=2min
+# The rest of the machine's memory stays for the rest: the collection is killed beyond 80 %.
+MemoryMax=80%

@@ -6,8 +6,9 @@
 #
 # Collect the ARCO-OCEAN forecast runs, at every resolution, with scripts/download.sh.
 #
-# Daily (cron), it adds the runs after each repository's last one up to today's (arco-make
-# download --extend: a day missed is caught up the next time, its GLO12 values then from later
+# Daily (systemd/arco-ocean-forecast.timer), it adds the runs after each repository's last one
+# up to today's (arco-make download --extend: a day missed is caught up the next time, its GLO12
+# values then from later
 # releases, flagged). The first time, --start backfills from that day (the end of the historical
 # dataset). The forecast recipes (configs/download/forecast_res-<res>.toml) keep the last five
 # years of runs. A run fails while one of its sources has not published it yet (a release
@@ -53,7 +54,7 @@ DESCRIPTION
 
     Examples:
         $0 --start 2026-07-01                 # the first time: backfill to today's run
-        $0                                    # every day, from cron (see README)
+        $0                                    # every day, from systemd (see README)
         $0 --status-url s3://BUCKET/status/forecast.json   # with the web page's heartbeat
 EOF
 }
@@ -137,7 +138,7 @@ END_DATE="${END_DATE:-$(date -u -d tomorrow +%Y-%m-%d)}"
 LOG_DIR="${LOG_DIR:-${PROJECT_ROOT}/logs/forecast}"
 mkdir -p "${LOG_DIR}"
 
-# One collection at a time: cron may start the next while a late one still runs.
+# One collection at a time: a collection by hand may meet the daily one.
 exec 9> "${LOG_DIR}/.forecast.lock"
 if ! flock -n 9; then
     echo "Another forecast collection is running (lock ${LOG_DIR}/.forecast.lock): waiting for it."

@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+#
+# Every day at 12:00 UTC, two hours after the last source published today's run on 23 Nov 2026
+# (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between 09:45 and 10:00), so
+# that a late release still makes it. A day the machine was off is collected when it starts
+# again (Persistent); a collection still running when the next is due is not started twice.
+# Next and last runs: systemctl --user list-timers.
+
+[Unit]
+Description=ARCO-OCEAN daily forecast collection, at 12:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 12:00:00 UTC
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

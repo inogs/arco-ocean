@@ -162,12 +162,31 @@ then every day, adding the runs after the last stored one (a missed day is caugh
 ```bash
 # The first time: every run from the end of the historical dataset to today's.
 scripts/forecast.sh --start 2026-07-01
-# Every day, from cron, two hours after the last source published today's run on 23 Nov 2026
-# (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between 09:45 and 10:00), so that
-# a late release still makes it; a run still missing is tried again (below), else the next day.
-# It publishes its heartbeat for the web page (below):
-# 0 12 * * * cd /path/to/arco-ocean && scripts/forecast.sh --status-url s3://ogs-arco-ocean/status/forecast.json >> logs/forecast/cron.log 2>&1
+# Then every day at 12:00 UTC, from systemd (below), with the heartbeat for the web page:
+scripts/install_units.sh -- --env-file FILE     # and --image FILE or --virtual-env DIR
 ```
+
+The daily collection runs as systemd user units, versioned in `systemd/`:
+`arco-ocean-forecast.timer` starts `arco-ocean-forecast.service`, which runs
+`scripts/forecast.sh --status-url s3://ogs-arco-ocean/status/forecast.json` with the options given
+to `scripts/install_units.sh` after `--`. 12:00 UTC is two hours after the last source published
+today's run on 23 Nov 2026 (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between
+09:45 and 10:00), so that a late release still makes it; a run still missing is tried again
+(below), else the next day. Compared with cron:
+- a day the machine was off is collected when it starts again, and a collection still running is
+  not started twice;
+- a collection that hangs is stopped after 20 hours (its heartbeat ends aborted, the next one
+  resumes), and one that takes more than 80 % of the machine's memory is killed;
+- the output goes to the journal (`journalctl --user -u arco-ocean-forecast`), the next and last
+  runs are shown by `systemctl --user list-timers`.
+
+The installer links the units from the checkout (after a `git pull` that changes them:
+`systemctl --user daemon-reload`) and writes the machine's part, the checkout and the options, in
+a drop-in (`~/.config/systemd/user/arco-ocean-forecast.service.d/local.conf`); run it again to
+change the options, `--uninstall` to remove everything. The user's units run only while the user
+is logged in, unless lingering is on (once: `sudo loginctl enable-linger $USER`). A collection
+can still be run by hand (`systemctl --user start arco-ocean-forecast`, or `scripts/forecast.sh`):
+collections never overlap.
 
 A run whose sources have not all published it yet (younger than two days) is not stored: the
 runs before it are, and it is tried again (every 30 minutes, 6 times), else collected the next
@@ -204,15 +223,25 @@ watchdog also reports that machine down. It is off until the repository's
 Actions variables give the heartbeat's URL, `FORECAST_STATUS_URL`
 (`https://ogs-arco-ocean.s3.eu-south-1.amazonaws.com/status/forecast.json`), and the logins to
 assign, `ALERT_ASSIGNEES` (comma-separated). GitHub disables the schedules of a public repository
-after 60 days without activity, warning by email first: the workflow is then enabled again in the
-Actions tab.
+after 60 days without activity, warning by email first. The collecting machine keeps it enabled:
+`scripts/install_units.sh --keepalive` adds a daily unit that runs
+`scripts/keep_watchdog_enabled.sh`, which enables the watchdog again if GitHub disabled it for
+inactivity (a workflow disabled by hand stays so), and otherwise asks GitHub to enable it anyway,
+which tools doing the same report to reset the count of days (GitHub does not document it). It
+needs `gh` and a token in `~/.config/arco-ocean/github-token`, readable by its owner only
+(`chmod 600`): a fine-grained personal access token for this repository alone, with the
+repository permission "Actions: Read and write" and nothing else. GitHub emails before the token
+expires; a failed keepalive shows in `systemctl --user list-units --failed`. Without it, enable
+the workflow again in the Actions tab.
 
 ### Checks
 
 `uvx pre-commit run --all-files` runs the checks made before each commit: TOML and YAML syntax,
 ruff, ShellCheck, REUSE and a secret scan. `uv run --frozen --only-group notes pytest tests` loads
 every recipe with the models of the pinned arco-make (an unknown key, step or argument fails),
-runs the examples of the coarsening notes, and tests the forecast heartbeat; the pre-commit checks
+runs the examples of the coarsening notes, and tests the forecast heartbeat and the systemd units
+(their installer and the watchdog's keepalive, with stand-ins for `systemctl` and `gh`; the units
+checked by `systemd-analyze verify`); the pre-commit checks
 also test the web page's and the watchdog's logic (`node --test site/status.test.mjs
 scripts/forecast_watchdog.test.mjs`, Node.js from `uvx`). CI runs both on every pull request.
 
