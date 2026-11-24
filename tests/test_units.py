@@ -142,12 +142,64 @@ def test_uninstall_removes_the_links_and_drop_ins(fake: dict[str, str], tmp_path
     ROOT / "systemd/arco-ocean-forecast.service"
   )
   (unit_dir / "unrelated.service").write_text("")
+  # A drop-in of the user's own (systemctl --user edit) stays.
+  (unit_dir / "arco-ocean-forecast.service.d" / "override.conf").write_text("[Service]\n")
   result = run("install_units.sh", fake, "--uninstall")
   assert result.returncode == 0, result.stderr
-  assert sorted(path.name for path in unit_dir.iterdir()) == ["unrelated.service"]
+  assert sorted(path.name for path in unit_dir.iterdir()) == [
+    "arco-ocean-forecast.service.d",
+    "unrelated.service",
+  ]
+  assert [path.name for path in (unit_dir / "arco-ocean-forecast.service.d").iterdir()] == [
+    "override.conf"
+  ]
   made = calls(fake)
-  assert "systemctl --user disable --now arco-ocean-forecast.timer" in made
-  assert "systemctl --user disable --now arco-ocean-watchdog-keepalive.timer" in made
+  for name in ("arco-ocean-forecast", "arco-ocean-watchdog-keepalive"):
+    assert f"systemctl --user disable --now {name}.timer" in made
+    # A collection running is stopped too.
+    assert f"systemctl --user stop {name}.service" in made
+
+
+def test_install_from_another_checkout_moves_the_units(fake: dict[str, str], tmp_path):
+  unit_dir = pathlib.Path(fake["XDG_CONFIG_HOME"]) / "systemd" / "user"
+  unit_dir.mkdir(parents=True)
+  old = tmp_path / "old-checkout" / "arco-ocean-forecast.service"
+  old.parent.mkdir()
+  old.write_text("")
+  (unit_dir / "arco-ocean-forecast.service").symlink_to(old)
+  result = run("install_units.sh", fake)
+  assert result.returncode == 0, result.stderr
+  # The old link is gone (systemctl link, a stand-in here, would make the new one).
+  assert not (unit_dir / "arco-ocean-forecast.service").is_symlink()
+  made = calls(fake)
+  assert made.index("systemctl --user disable arco-ocean-forecast.timer") < made.index(
+    f"systemctl --user link {ROOT}/systemd/arco-ocean-forecast.service"
+    f" {ROOT}/systemd/arco-ocean-forecast.timer"
+  )
+
+
+def test_install_refuses_to_replace_a_unit_file_of_its_own(fake: dict[str, str]):
+  unit_dir = pathlib.Path(fake["XDG_CONFIG_HOME"]) / "systemd" / "user"
+  unit_dir.mkdir(parents=True)
+  (unit_dir / "arco-ocean-forecast.timer").write_text("[Timer]\n")
+  result = run("install_units.sh", fake)
+  assert result.returncode == 1 and "a file of its own" in result.stderr
+  assert (unit_dir / "arco-ocean-forecast.timer").read_text() == "[Timer]\n"
+
+
+def test_install_keepalive_repo(fake: dict[str, str], tmp_path):
+  result = run("install_units.sh", fake, "--keepalive", "--keepalive-repo", "someone/arco-ocean")
+  assert result.returncode == 0, result.stderr
+  unit_dir = pathlib.Path(fake["XDG_CONFIG_HOME"]) / "systemd" / "user"
+  keeper = (unit_dir / "arco-ocean-watchdog-keepalive.service.d" / "local.conf").read_text()
+  assert 'Environment="KEEPALIVE_OPTIONS=--repo someone/arco-ocean"' in keeper
+  bad = run("install_units.sh", fake, "--keepalive", "--keepalive-repo", "a b")
+  assert bad.returncode == 1 and "takes OWNER/REPO" in bad.stderr
+  # Installed again without --keepalive: the keepalive stays, and the installer says so.
+  link = unit_dir / "arco-ocean-watchdog-keepalive.service"
+  link.symlink_to(tmp_path / "elsewhere.service")
+  again = run("install_units.sh", fake)
+  assert again.returncode == 0 and "The keepalive installed before stays" in again.stdout
 
 
 @pytest.fixture
@@ -196,7 +248,21 @@ def test_keepalive_needs_a_private_token_file(fake: dict[str, str], token: pathl
   assert result.returncode == 1 and "readable by others" in result.stderr
   missing = run("keep_watchdog_enabled.sh", fake, "--token-file", str(token) + ".missing")
   assert missing.returncode == 1 and "no token file" in missing.stderr
+  # Empty, gh would use its own login instead.
+  token.chmod(0o600)
+  token.write_text("\n")
+  empty = run("keep_watchdog_enabled.sh", fake | {"FAKE_STATE": "active"})
+  assert empty.returncode == 1 and "is empty" in empty.stderr
   assert calls(fake) == []
+
+
+def test_keepalive_follows_a_linked_token_file(fake: dict[str, str], token: pathlib.Path):
+  link = token.with_name("linked-token")
+  link.symlink_to(token)
+  result = run(
+    "keep_watchdog_enabled.sh", fake | {"FAKE_STATE": "active"}, "--token-file", str(link)
+  )
+  assert result.returncode == 0, result.stderr
 
 
 def test_scripts_are_executable():

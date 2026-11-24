@@ -59,8 +59,14 @@ if [[ ! -f "${TOKEN_FILE}" ]]; then
     echo "Error: no token file '${TOKEN_FILE}'." >&2
     exit 1
 fi
-if [[ "$(stat -c %a "${TOKEN_FILE}")" != [4567]00 ]]; then
+# The file's own mode, a link followed.
+if [[ "$(stat -L -c %a "${TOKEN_FILE}")" != [4567]00 ]]; then
     echo "Error: '${TOKEN_FILE}' is readable by others: chmod 600 it." >&2
+    exit 1
+fi
+# An empty token would let gh use its own login, with all its rights.
+if ! grep -q '[^[:space:]]' "${TOKEN_FILE}"; then
+    echo "Error: '${TOKEN_FILE}' is empty." >&2
     exit 1
 fi
 

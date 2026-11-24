@@ -184,7 +184,9 @@ today's run on 23 Nov 2026 (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS 
 The installer links the units from the checkout (after a `git pull` that changes them:
 `systemctl --user daemon-reload`) and writes the machine's part, the checkout and the options, in
 a drop-in (`~/.config/systemd/user/arco-ocean-forecast.service.d/local.conf`); run it again to
-change the options, `--uninstall` to remove everything. The user's units run only while the user
+change the options, or from another checkout to move the units there. `--uninstall` stops the
+timers and a collection running and removes what the installer wrote (drop-ins of your own, from
+`systemctl --user edit`, stay). The user's units run only while the user
 is logged in, unless lingering is on (once: `sudo loginctl enable-linger $USER`). A collection
 can still be run by hand (`systemctl --user start arco-ocean-forecast`, or `scripts/forecast.sh`):
 collections never overlap.
@@ -225,7 +227,8 @@ Actions variables give the heartbeat's URL, `FORECAST_STATUS_URL`
 (`https://ogs-arco-ocean.s3.eu-south-1.amazonaws.com/status/forecast.json`), and the logins to
 assign, `ALERT_ASSIGNEES` (comma-separated). GitHub disables the schedules of a public repository
 after 60 days without activity, warning by email first. The collecting machine keeps it enabled:
-`scripts/install_units.sh --keepalive` adds a daily unit that runs
+`scripts/install_units.sh --keepalive` (`--keepalive-repo OWNER/REPO` for another repository than
+`inogs/arco-ocean`) adds a daily unit that runs
 `scripts/keep_watchdog_enabled.sh`, which enables the watchdog again if GitHub disabled it for
 inactivity (a workflow disabled by hand stays so), and otherwise asks GitHub to enable it anyway,
 which tools doing the same report to reset the count of days (GitHub does not document it). It
