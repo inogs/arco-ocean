@@ -15,10 +15,9 @@ const DAY = 24 * HOUR;
 // 15 minutes); a finished one when the next has not finished within `stale_after_hours`.
 const MISSED_BEATS = 3;
 const MIN_SILENCE = 15 * MINUTE;
-// A finished collection is stale too when a resolution's newest stored run is more than this
-// many days before the newest asked for: only runs younger than the recipes' `missing_after` (two
-// days) wait for their sources, older ones are stored even with a source missing (flagged).
-export const MAX_LAG_DAYS = 2;
+// A finished collection is stale too when a resolution falls behind (`behind`), by more than the
+// recipes' `missing_after`, which the heartbeat publishes (two days if it does not).
+const DEFAULT_MISSING_AFTER_DAYS = 2;
 
 // "3 min", "2 h 5 min", "1 d 3 h".
 export function duration(ms) {
@@ -125,27 +124,14 @@ export function assess(heartbeat, now = Date.now()) {
         detail: `No collection has finished for ${duration(now - ended)}: one runs every day.`,
       };
     }
-    // Finished, but without storing the runs: a source stopped, or the downloads fail to store.
-    const behind = heartbeat.target_run
-      ? (heartbeat.resolutions ?? []).filter((entry) => {
-          const lag = lagDays(entry.latest_run, heartbeat.target_run);
-          return lag === null || lag > MAX_LAG_DAYS;
-        })
-      : [];
-    if (behind.length > 0) {
-      const which = behind
-        .map((entry) => {
-          const lag = lagDays(entry.latest_run, heartbeat.target_run);
-          const newest = lag === null ? "no run stored" : `${entry.latest_run}, ${lag} days`;
-          return `${resolutionLabel(entry.res)} (${newest})`;
-        })
-        .join(", ");
+    const reasons = behind(heartbeat, now);
+    if (reasons.length > 0) {
       return {
         status: "stale",
         label: "Stale",
         detail:
-          `The collection finished, but the newest runs stored are behind the newest asked for ` +
-          `(${heartbeat.target_run}): ${which}.`,
+          `The collection finished, but ${reasons.join("; ")}: a source may have stopped ` +
+          "publishing (the flags tell which), or the runs are not stored.",
       };
     }
     return {
@@ -161,19 +147,54 @@ export function assess(heartbeat, now = Date.now()) {
   };
 }
 
+// "YYYY-MM-DD" as the time of its midnight UTC, or null.
+function day(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  return Number.isNaN(time) ? null : time;
+}
+
 // How many days the newest stored run is before the newest asked for (null if either is missing).
 export function lagDays(latestRun, targetRun) {
-  const run = Date.parse(`${latestRun}T00:00:00Z`);
-  const target = Date.parse(`${targetRun}T00:00:00Z`);
-  if (!latestRun || !targetRun || Number.isNaN(run) || Number.isNaN(target)) return null;
+  const run = day(latestRun);
+  const target = day(targetRun);
+  if (run === null || target === null) return null;
   return Math.round((target - run) / DAY);
+}
+
+// Why the resolutions of a finished collection are behind, if they are: a newest stored run older
+// than the recipes' `missing_after` (runs that old are stored even without a source, flagged), or
+// a resolution waiting for its sources for longer than that (a source that stopped publishing
+// keeps it waiting every day, while its older runs are stored without it).
+export function behind(heartbeat, now = Date.now()) {
+  const limit = Number(heartbeat.missing_after_days) || DEFAULT_MISSING_AFTER_DAYS;
+  const target = day(heartbeat.target_run);
+  const reasons = [];
+  for (const entry of heartbeat.resolutions ?? []) {
+    const label = resolutionLabel(entry.res);
+    if (target !== null) {
+      const lag = lagDays(entry.latest_run, heartbeat.target_run);
+      if (lag === null) {
+        reasons.push(`${label} has no run stored`);
+        continue;
+      }
+      if (lag > limit) {
+        reasons.push(`${label}'s newest run is ${entry.latest_run}, ${lag} days before the newest`);
+        continue;
+      }
+    }
+    const since = Date.parse(entry.waiting_since ?? "");
+    if (!Number.isNaN(since) && now - since > limit * DAY) {
+      reasons.push(`${label} has waited for a source for ${duration(now - since)}`);
+    }
+  }
+  return reasons;
 }
 
 // How old the newest stored run is, in whole days, at `now` (UTC dates).
 export function runAgeDays(latestRun, now = Date.now()) {
-  if (!latestRun) return null;
-  const run = Date.parse(`${latestRun}T00:00:00Z`);
-  if (Number.isNaN(run)) return null;
-  const today = Date.parse(`${new Date(now).toISOString().slice(0, 10)}T00:00:00Z`);
+  const run = day(latestRun);
+  if (run === null) return null;
+  const today = day(new Date(now).toISOString().slice(0, 10));
   return Math.round((today - run) / DAY);
 }

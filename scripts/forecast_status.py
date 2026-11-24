@@ -13,12 +13,19 @@ The document (`SCHEMA` 1), all times in UTC:
 
   {"schema": 1, "state": "running" | "finished" | "aborted", "detail": str | null,
    "started_at": time, "updated_at": time (the heartbeat), "ended_at": time | null,
-   "heartbeat_seconds": int, "stale_after_hours": float, "target_run": "YYYY-MM-DD",
+   "heartbeat_seconds": int, "stale_after_hours": float, "missing_after_days": float,
+   "target_run": "YYYY-MM-DD",
    "resolutions": [{"res": "0p25", "state": "pending" | "downloading" | "finished"
                     | "not_published" | "failed", "started_at": ..., "ended_at": ...,
                     "latest_run": "YYYY-MM-DD" | null, "runs": int | null,
                     "flags": {flag variable: fraction of the latest run's lead times true},
-                    "error": str | null}]}
+                    "waiting_since": time | null, "error": str | null}]}
+
+`waiting_since`: when the resolution's collections started to end with a run not published (the
+first of them in a row), kept until one stores every run; `missing_after_days` is the recipes'
+`[forecast] missing_after`. A page calls the collection stale when a resolution's newest run is
+older than that, or has waited longer: a source that stopped publishing keeps a resolution
+waiting (its older runs are stored without it, flagged), every day.
 
 Local paths stay in the state file: they are not published.
 
@@ -158,6 +165,7 @@ def start(document: dict[str, Any] | None, args: argparse.Namespace) -> dict[str
       "latest_run": previous.get(res, {}).get("latest_run"),
       "runs": previous.get(res, {}).get("runs"),
       "flags": previous.get(res, {}).get("flags", {}),
+      "waiting_since": previous.get(res, {}).get("waiting_since"),
       "error": None,
     }
     summarize(entry, path)
@@ -171,6 +179,7 @@ def start(document: dict[str, Any] | None, args: argparse.Namespace) -> dict[str
     "ended_at": None,
     "heartbeat_seconds": args.heartbeat_seconds,
     "stale_after_hours": args.stale_after_hours,
+    "missing_after_days": args.missing_after_days,
     "target_run": args.target_run,
     "resolutions": resolutions,
     "repositories": repositories,
@@ -187,6 +196,11 @@ def resolution(document: dict[str, Any], args: argparse.Namespace) -> dict[str, 
     entry["started_at"] = now()
   elif args.state != "pending":
     entry["ended_at"] = now()
+    # Waiting from the first collection in a row that ended with a run not published.
+    if args.state == "not_published":
+      entry["waiting_since"] = entry.get("waiting_since") or now()
+    elif args.state == "finished":
+      entry["waiting_since"] = None
     summarize(entry, document.get("repositories", {}).get(args.res))
   return document
 
@@ -213,6 +227,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
   first.add_argument("--repo", action="append", default=[], help="RES=PATH, one per resolution")
   first.add_argument("--heartbeat-seconds", type=int, default=300)
   first.add_argument("--stale-after-hours", type=float, default=30.0)
+  first.add_argument("--missing-after-days", type=float, default=2.0)
   commands.add_parser("beat", help="the collection is still running")
   step = commands.add_parser("res", help="a resolution's download changes state")
   step.add_argument("res")

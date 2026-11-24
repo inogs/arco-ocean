@@ -39,6 +39,10 @@ DESCRIPTION
         --status-url URL        Publish the heartbeat there: an s3:// URL (through arco-make's
                                 AWS profile) or a local path (default: none, no heartbeat).
         --heartbeat SECONDS     Between heartbeats while the collection runs (default: 300).
+        --missing-after DAYS    Published with the heartbeat: the recipes' [forecast]
+                                missing_after; the page calls the collection stale when a
+                                resolution's newest run is older, or has waited longer for its
+                                sources (default: 2).
         --stale-after HOURS     Published with the heartbeat: the page calls the collection
                                 stale when none finished for that long (default: 30).
         -h, --help              Show this help.
@@ -64,6 +68,7 @@ LOG_DIR=""
 STATUS_URL=""
 HEARTBEAT=300
 STALE_AFTER=30
+MISSING_AFTER=2
 IMAGE="oras://ghcr.io/stefanocampanella/arco-make:latest"
 VENV=""
 ENV_FILE="scripts/.env"
@@ -90,6 +95,8 @@ while [[ $# -gt 0 ]]; do
         --status-url=*) STATUS_URL="${1#*=}"; shift ;;
         --heartbeat) HEARTBEAT="$2"; shift 2 ;;
         --heartbeat=*) HEARTBEAT="${1#*=}"; shift ;;
+        --missing-after) MISSING_AFTER="$2"; shift 2 ;;
+        --missing-after=*) MISSING_AFTER="${1#*=}"; shift ;;
         --stale-after) STALE_AFTER="$2"; shift 2 ;;
         --stale-after=*) STALE_AFTER="${1#*=}"; shift ;;
         # Given to download.sh; the heartbeat runs in the same environment, with the same paths.
@@ -112,6 +119,10 @@ done
 
 if ! [[ "${HEARTBEAT}" =~ ^[1-9][0-9]*$ ]]; then
     echo "Error: --heartbeat takes a positive number of seconds (got '${HEARTBEAT}')." >&2
+    exit 1
+fi
+if ! [[ "${MISSING_AFTER}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    echo "Error: --missing-after takes a number of days (got '${MISSING_AFTER}')." >&2
     exit 1
 fi
 if ! [[ "${STALE_AFTER}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
@@ -188,7 +199,8 @@ if [[ -n "${STATUS_URL}" ]]; then
         REPOS+=(--repo "${RES}=${DATA_ROOT:-${PROJECT_ROOT}}/data/forecast/res=${RES}")
     done
     status start --target-run "$(date -u -d "${END_DATE} - 1 day" +%Y-%m-%d)" \
-        --heartbeat-seconds "${HEARTBEAT}" --stale-after-hours "${STALE_AFTER}" "${REPOS[@]}"
+        --heartbeat-seconds "${HEARTBEAT}" --stale-after-hours "${STALE_AFTER}" \
+        --missing-after-days "${MISSING_AFTER}" "${REPOS[@]}"
     # The beat, until the collection ends. Stopped, it stops its sleep too (else left behind with
     # the script's output open); it does not hold the collection's lock.
     (

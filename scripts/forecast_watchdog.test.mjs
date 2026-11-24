@@ -112,7 +112,7 @@ test("a collection finishing without new runs keeps the incident, one a day", ()
   const decision = decide(behind, issue, LATER);
   assert.equal(decision.action, "update");
   assert.equal(decision.title, "Forecast collection: stale");
-  assert.match(decision.comment, /0\.25° \(2026-11-20, 4 days\)/);
+  assert.match(decision.comment, /0\.25°'s newest run is 2026-11-20, 4 days before/);
   // The same collection checked again: the body only.
   const updated = { ...issue, body: decision.body };
   assert.equal(decide(behind, updated, LATER).action, "refresh");

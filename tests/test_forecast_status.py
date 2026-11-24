@@ -6,6 +6,8 @@ repository and a local published file."""
 import importlib.util
 import json
 import pathlib
+import re
+import tomllib
 
 import icechunk
 import numpy as np
@@ -154,3 +156,39 @@ def test_steps_need_a_started_collection(files) -> None:
   run(state, published, "start", "--target-run", "2026-11-24", "--repo", "1p0=/nowhere")
   with pytest.raises(SystemExit, match="unknown resolution"):
     forecast_status.main(["--state-file", str(state), "res", "0p25", "finished"])
+
+
+def test_a_resolution_waits_from_its_first_collection_not_published(files) -> None:
+  state, published = files
+
+  def collection(target: str, outcome: str) -> dict:
+    run(state, published, "start", "--target-run", target, "--repo", "1p0=/nowhere")
+    run(state, published, "res", "1p0", "downloading")
+    run(state, published, "res", "1p0", outcome)
+    return run(state, published, "end", "finished")["resolutions"][0]
+
+  first = collection("2026-11-22", "not_published")
+  assert first["waiting_since"] is not None
+  # Still waiting the next day: since the first; a failure changes nothing; stored, it stops.
+  assert collection("2026-11-23", "not_published")["waiting_since"] == first["waiting_since"]
+  assert collection("2026-11-24", "failed")["waiting_since"] == first["waiting_since"]
+  assert collection("2026-11-25", "finished")["waiting_since"] is None
+
+
+def test_the_published_missing_after_is_the_recipes(files) -> None:
+  # The page judges lags and waits by it: forecast.sh's default must be the recipes' value.
+  root = pathlib.Path(__file__).parents[1]
+  script = (root / "scripts" / "forecast.sh").read_text()
+  match = re.search(r"^MISSING_AFTER=([0-9.]+)$", script, re.MULTILINE)
+  assert match is not None
+  default = float(match.group(1))
+  recipes = sorted((root / "configs" / "download").glob("forecast_res-*.toml"))
+  assert recipes
+  for recipe in recipes:
+    value = tomllib.loads(recipe.read_text())["forecast"]["missing_after"]
+    assert pd.to_timedelta(value) == pd.Timedelta(days=default), recipe.name
+  state, published = files
+  document = run(
+    state, published, "start", "--target-run", "2026-11-24", "--missing-after-days", "2"
+  )
+  assert document["missing_after_days"] == 2.0

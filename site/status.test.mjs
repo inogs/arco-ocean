@@ -76,7 +76,7 @@ test("a finished collection is finished until stale_after_hours have passed", ()
 });
 
 test("a finished collection storing no new runs is stale", () => {
-  const behind = (latest) =>
+  const behind = (latest, fields = {}) =>
     heartbeat({
       state: "finished",
       ended_at: "2026-11-24T12:20:00Z",
@@ -84,18 +84,51 @@ test("a finished collection storing no new runs is stale", () => {
         { res: "0p25", state: "not_published", latest_run: latest, runs: 147, flags: {} },
         { res: "1p0", state: "finished", latest_run: "2026-11-24", runs: 147, flags: {} },
       ],
+      ...fields,
     });
   // Two days behind: runs younger than missing_after may wait for their sources.
   assert.equal(assess(behind("2026-11-22"), NOW).status, "finished");
   const verdict = assess(behind("2026-11-21"), NOW);
   assert.equal(verdict.status, "stale");
-  assert.match(verdict.detail, /behind the newest asked for \(2026-11-24\): 0\.25° \(2026-11-21, 3 days\)\./);
+  assert.match(
+    verdict.detail,
+    /finished, but 0\.25°'s newest run is 2026-11-21, 3 days before the newest: a source may/,
+  );
+  // The heartbeat's missing_after decides.
+  assert.equal(assess(behind("2026-11-21", { missing_after_days: 3 }), NOW).status, "finished");
+  assert.equal(assess(behind("2026-11-22", { missing_after_days: 1 }), NOW).status, "stale");
   // A repository without runs (missing, or unreadable) is behind too.
-  assert.match(assess(behind(null), NOW).detail, /: 0\.25° \(no run stored\)\./);
-  // Without the newest run asked for, nothing to compare.
+  assert.match(assess(behind(null), NOW).detail, /but 0\.25° has no run stored:/);
+  // Without a readable newest run asked for, nothing to compare.
   assert.equal(assess({ ...behind(null), target_run: null }, NOW).status, "finished");
+  assert.equal(assess({ ...behind(null), target_run: "2026-11-24T00:00" }, NOW).status, "finished");
   assert.equal(lagDays("2026-11-21", "2026-11-24"), 3);
   assert.equal(lagDays("bad", "2026-11-24"), null);
+});
+
+test("a resolution waiting for a source for longer than missing_after is stale", () => {
+  // A source that stopped: its older runs are stored without it, so the lag stays at two days,
+  // but the resolution waits, collection after collection.
+  const waiting = (since) =>
+    heartbeat({
+      state: "finished",
+      ended_at: "2026-11-24T12:20:00Z",
+      resolutions: [
+        {
+          res: "0p25",
+          state: "not_published",
+          latest_run: "2026-11-22",
+          runs: 147,
+          flags: { glo12_forecast: 0 },
+          waiting_since: since,
+        },
+      ],
+    });
+  assert.equal(assess(waiting("2026-11-22T12:30:00Z"), NOW).status, "finished"); // 48 h
+  const verdict = assess(waiting("2026-11-22T12:29:00Z"), NOW);
+  assert.equal(verdict.status, "stale");
+  assert.match(verdict.detail, /but 0\.25° has waited for a source for 2 d: a source may/);
+  assert.equal(assess(waiting(null), NOW).status, "finished");
 });
 
 test("a finished collection's detail is shown (a run not published yet)", () => {
