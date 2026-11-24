@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+#
+# Keeps the forecast watchdog (.github/workflows/forecast-watchdog.yml) enabled: GitHub disables
+# the schedules of a public repository after 60 days without activity
+# (scripts/keep_watchdog_enabled.sh). Needs a GitHub token in a file; installed, with its timer,
+# by scripts/install_units.sh --keepalive.
+
+[Unit]
+Description=ARCO-OCEAN: keep the forecast watchdog's schedule enabled
+Documentation=https://github.com/inogs/arco-ocean#forecasts
+
+[Service]
+Type=oneshot
+# gh is in ~/.local/bin on some machines.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=KEEPALIVE_OPTIONS=
+ExecStart=/bin/bash scripts/keep_watchdog_enabled.sh $KEEPALIVE_OPTIONS
+TimeoutStartSec=5min

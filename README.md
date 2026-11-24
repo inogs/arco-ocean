@@ -8,91 +8,55 @@
 
 The availability of standard datasets and benchmarks has been a key factor in the development of new machine learning methods and models, including those applied to weather forecasting and climate science ([Rasp et al., 2023](https://arxiv.org/abs/2308.15560), [Watson-Parris et al., 2022](https://doi.org/10.1029/2021MS002954)). The ARCO-OCEAN dataset is a new dataset that aims to provide a representative, and to some extent comprehensive, dataset for training machine learning models to forecast the ocean state.
 
-This dataset is the first to include both the ocean state and its forcing, and has been designed having in mind coupled atmosphere-ocean models for Subseasonal-to-Seasonal (S2S) forecasts ([Campanella et al., 2025](https://www.climatechange.ai/papers/iclr2025/81)). However, future extensions could include variables related to climate, like biogeochemistry or a full-depth representation of the ocean.
+This dataset is the first to include both the ocean state and its forcing, and has been designed having in mind coupled atmosphere-ocean models for Subseasonal-to-Seasonal (S2S) forecasts ([Campanella et al., 2025](https://www.climatechange.ai/papers/iclr2025/81)). However, future extensions could include variables related to climate, like biogeochemistry.
 
 ## Data
 
-ARCO-OCEAN is an analysis-ready cloud-optimized ([Abernathey et al., 2021](https://doi.org/10.1109/MCSE.2021.3059437)) dataset providing physical properties of the ocean, waves, and sea ice for a period of about 28 years between the 1st of January 1993 and the 30th of June 2021. The dataset includes also atmospheric and hydrological variables that would be needed as boundary conditions and used to drive a numerical simulation. The dataset is the result of collecting, processing, merging and optimizing for the cloud different data sources, all retrospective analyses (reanalyses) or hindcasts of different Earth system components.
+ARCO-OCEAN is an analysis-ready cloud-optimized ([Abernathey et al., 2021](https://doi.org/10.1109/MCSE.2021.3059437)) dataset providing physical properties of the ocean and sea ice for a period of about 33 years, from the 1st of January 1993 to the 30th of June 2026, the last day every source gives as final data (November 2026). The dataset includes also atmospheric and hydrological variables that would be needed as boundary conditions and used to drive a numerical simulation. The dataset is the result of collecting, processing, merging and optimizing for the cloud different data sources, all retrospective analyses (reanalyses) or hindcasts of different Earth system components.
 
-The fields are discretized on a regular grid with a horizontal spatial resolution of 0.25°. The latter being the resolution of most state-of-the-art machine learning weather forecasting models trained on the retrospective analysis ERA5 ([Hersback et al., 2020](https://doi.org/10.1002/qj.3803)). Many of the variables in ARCO-OCEAN were originally defined on an Arakawa C grid and afterward interpolated on cell centers before being further postprocessed and ingested in the dataset. Please refer to the documentation of individual source datasets for more details. Also, see the section on regridding below.
+The fields are given on regular latitude-longitude grids at three horizontal resolutions: 0.25°, 0.5° and 1°. The finest is the resolution of most state-of-the-art machine learning weather forecasting models trained on the retrospective analysis ERA5 ([Hersbach et al., 2020](https://doi.org/10.1002/qj.3803)), and ERA5's own grid; the coarser ones are made from the same sources, not from the 0.25° data, so that every coarse cell keeps the water, ice and river input of the source cells under it. Many of the variables in ARCO-OCEAN were originally defined on an Arakawa C grid and afterward interpolated on cell centers before being further postprocessed and ingested in the dataset. Please refer to the documentation of individual source datasets for more details. Also, see the section on regridding below.
 
 The temporal resolution of ARCO-OCEAN is 1 day. The simulation timestep of numerical models is usually much less than that, and source datasets distribute either system state snapshots or time averages (or accumulations, e.g., for precipitation) at lower temporal resolutions. On top of that, the ARCO-OCEAN postprocessing further reduces the temporal resolution of some of these datasets. Individual sections of documentation provide more details.
 
-ARCO-OCEAN is distributed as a Zarr dataset using the [Zarr Storage Specification Version 2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html) with consolidated metadata, but migration to version 3 is planned. The previous can be accessed directly from the cloud or downloaded to local storage. The dataset is chunked only along the time dimension, with a chunk size of 1 day, and uses LZ4 compression with compression level 1. This choice was motivated by speed-memory efficiency trade-offs and aimed at minimizing the time spent on IO when reading short segments of the dataset (2/3 days) from local storage. This chunking scheme might be suboptimal for some applications, such as computing the climatology, especially for small areas. Hence, dataset statistics (climatology, mean, and others) are provided.
-
-Indeed, the dataset has been designed to train a machine learning forecasting model and takes inspiration from similar datasets, like ARCO-ERA5 ([Carver et al., 2023](https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842)). In light of this, design choices made are motivated in the following, and more precise information on how to reproduce the ARCO-OCEAN dataset is provided.
+Indeed, the dataset has been designed to train a machine learning forecasting model and takes inspiration from similar datasets, like ARCO-ERA5 ([Carver et al., 2023](https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842)). In light of this, design choices made are motivated in the following, and more precise information on how to reproduce the ARCO-OCEAN dataset is provided: the recipes are in `configs/download/`, the scripts that run them in `scripts/`, and the program is [arco-make](https://github.com/stefanocampanella/arco-make).
 
 ### Ocean and sea ice
 
 The ocean circulation and sea ice variables are taken from the GLORYS12 reanalysis[^1], hence the dataset contains modified E.U. Copernicus Marine Service Information; [DOI: 10.48670/moi-00021](https://doi.org/10.48670/moi-00021).
 
-GLORYS12 has an eddy-resolving resolution of 0.083°, which enables a high-fidelity representation of the dynamics of the ocean. Henceforth, by regridding a higher resolution product, the ARCO-OCEAN dataset retains accuracy although its lower resolution, as argued in [El Aouni et al., 2024](https://arxiv.org/abs/2412.05454). Notice that GLORYS12 has a domain including longitudes between -80° and 90°. During postprocessing steps this domain has been extended to lower latitudes by filling them with missing values (NaNs). From the viewpoint of the computation of the mask (see the related section below), it is as if the points at these latitudes were covered with land.
+GLORYS12 has an eddy-resolving resolution of 0.083°, which enables a high-fidelity representation of the dynamics of the ocean. Henceforth, by regridding a higher resolution product, the ARCO-OCEAN dataset retains accuracy although its lower resolution, as argued in [El Aouni et al., 2024](https://arxiv.org/abs/2412.05454). GLORYS12 covers latitudes from -80° to 90°: south of it, coarse cells have no sea (`seafrac` is 0) and no ocean values.
 
-GLORYS12 is the only source dataset with a corresponding vertical dimension in ARCO-OCEAN. The number of vertical levels has been reduced from 50 to 10 by subsampling GLORYS12 at the following levels: 0, 4, 8, 12, 16, 20, 24, 28, 32, and 34. Hence, ARCO-OCEAN contains the surface level (at about 50 cm depth, not accounting for skin effects), which is the most important due to coupling with the atmosphere, and 9 levels below, at (about) geometrically increasing depths within the first kilometre.
+GLORYS12 is the only source dataset with a vertical dimension in ARCO-OCEAN. Its first 49 levels are kept, from 0.494 m to 5274.784 m; the 50th (5727.917 m) is left out, as NEMO, the model behind GLORYS12, never computes it.
 
-| ARCO-OCEAN level | GLORYS12 level | Depth (m) |
-|------------------|----------------|-----------|
-| 0                | 0              | 0.494025  |
-| 1                | 4              | 5.078224  |
-| 2                | 8              | 11.405    |
-| 3                | 12             | 21.59882  |
-| 4                | 16             | 40.34405  |
-| 5                | 20             | 77.85385  |
-| 6                | 24             | 155.8507  |
-| 7                | 28             | 318.1274  |
-| 8                | 32             | 643.5668  |
-| 9                | 34             | 902.3393  |
+| Variable name | Description                                    | Data type | Units   | Assimilated |
+|---------------|------------------------------------------------|-----------|---------|-------------|
+| `thetao`      | Potential temperature                          | float32   | °C      | Yes         |
+| `so`          | Salinity                                       | float32   | - (PSU) | Yes         |
+| `uo`          | Eastward ocean current velocity                | float32   | m/s     | No          |
+| `vo`          | Northward ocean current velocity               | float32   | m/s     | No          |
+| `zos`         | Sea surface height above geoid                 | float32   | m       | Yes         |
+| `siconc`      | Sea ice concentration (over the sea part)      | float32   | -       | Yes         |
+| `sivol`       | Sea ice volume per area (`siconc` × `sithick`) | float32   | m       | No          |
+| `usic`        | `siconc` × eastward sea ice velocity           | float32   | m/s     | No          |
+| `vsic`        | `siconc` × northward sea ice velocity          | float32   | m/s     | No          |
 
-This is to reduce the memory footprint of the dataset while keeping a faithful representation of the dynamics at timescales of interest. Indeed, the selected depths will contain the mixed layer, the pycnocline and the thermocline for most latitudes and times, while deeper circulation would be less relevant for S2S timescales. Given that mesoscale vertical velocities are on the order of centimetres per day, but high-magnitude events can be on the order of meters per day ([Christensen et al., 2024](https://doi.org/10.1029/2023JC020003)), most of the dynamics can be captured within the first kilometre.
+Values are averages over the sea part of each cell. GLORYS12's sea ice thickness and velocity (means over the ice-covered part) are `sivol / siconc`, `usic / siconc` and `vsic / siconc` where `siconc > 0`.
 
-All dynamic variables, except the bottom temperature for the above reason, have been kept, and their names reflect those used in the source dataset.
+| Variable name                        | Description                                                             | Data type | Units |
+|--------------------------------------|-------------------------------------------------------------------------|-----------|-------|
+| `seafrac`                            | Share of the cell where GLORYS12 has a sea cell, per level (static)     | float32   | -     |
+| `deptho`                             | Mean sea-floor depth, land as 0 (static; see its comment)               | float32   | m     |
+| `areacello`                          | Cell area, on GLORYS12's sphere, radius 6,378,100 m (static)            | float32   | m²    |
+| `volcello`                           | Sea water volume of the cell: `seafrac` × layer thickness × `areacello` | float32   | m³    |
+| `lat_bnds`, `lon_bnds`, `depth_bnds` | CF cell bounds (depth: GLORYS12's layer faces)                          | float32   | ° / m |
 
-| Variable name | Description                      | Data type | Units   | Assimilated |
-|---------------|----------------------------------|-----------|---------|-------------|
-| `thetao`      | Potential temperature            | float32   | °C      | Yes         |
-| `so`          | Salinity                         | float32   | - (PSU) | Yes         |
-| `uo`          | Eastward ocean current velocity  | float32   | m/s     | No          |
-| `vo`          | Northward ocean current velocity | float32   | m/s     | No          |
-| `zos`         | Sea surface height above geoid   | float32   | m       | Yes         |
-| `mlostst`     | Mixed layer thickness            | float32   | m       | No          |
-| `siconc`      | Sea ice concentration            | float32   | -       | Yes         |
-| `sithick`     | Sea ice thickness                | float32   | m       | No          |
-| `usi`         | Eastward sea ice velocity        | float32   | m/s     | No          |
-| `vsi`         | Northward sea ice velocity       | float32   | m/s     | No          |
-
-The only time invariant taken from GLORYS12 is the depth of the ocean below the geoid, while the mask has been recomputed as explained below.
-
-| Variable name | Description                        | Data type      | Units |
-|---------------|------------------------------------|----------------|-------|
-| `deptho`      | Depth of the ocean below the geoid | float32 (bool) | m     |
-| `glorys_mask` | GLORYS12 sea/land mask             | int8 (bool)    | -     |
+Ocean and sea ice values exist exactly where `seafrac > 0`. Volumes and heat contents are sums of value × `volcello`; areas and river totals use `areacello` (discharge in m³/s = `dis24_outlets` × `areacello` / 86400). The variables name these weights in `cell_measures`. How these fields are built, and why, is in the [notes on coarsening ocean datasets](https://github.com/stefanocampanella/arco-make/blob/master/docs/coarsen-ocean-datasets.md).
 
 [^1]: Global Ocean Physics Reanalysis. E.U. Copernicus Marine Service Information (CMEMS). Marine Data Store (MDS). DOI: 10.48670/moi-00021 (Accessed on 10-Oct-2025)
 
 ### Waves
 
-The wave variables are derived from the WAVERYS reanalysis[^2], hence the dataset contains modified E.U. Copernicus Marine Service Information; [DOI: 10.48670/moi-00022](https://doi.org/10.48670/moi-00022).
-
-Ocean waves form the boundary between the ocean and the atmosphere. Accurately describing the physical processes at this ocean–atmosphere boundary allows determining the air–sea fluxes of momentum, sensible and latent heat, among others. Since the wave field plays a key role in these exchange processes, wave models are necessary not only to represent the wave spectrum but also to simulate the interface processes that regulate fluxes across it. Information about the sea state provided by wave models can therefore be explicitly used in studies of air–sea interactions.
-
-For these reasons, as well as other potential uses of the dataset, a core number of physical variables from WAVERYS have been selected. Among them, one can reasonably expect that significant wave height contributes the most to driving ocean circulation, by changing the sea surface roughness length, hence wind stresses. Notice that, to the best knowledge of the authors, there are no publicly available S2S forecasts for wave data. Hence, the inclusion of these variables in the training of an autoregressive model is not advised if working on operational systems targeting those timescales.
-
-| Variable name | Description                                   | Data type | Units | Assimilated |
-|---------------|-----------------------------------------------|-----------|-------|-------------|
-| `swh`         | Spectral significant wave height (`VHM0`)     | float32   | m     | Yes         |
-| `swp`         | Spectral moments (0, 2) wave period (`VTM02`) | float32   | s     | Yes         |
-| `mwd`         | Mean wave direction from (`VMDR`)             | float32   | deg   | Yes         |
-| `usd`         | Stokes drift eastward velocity  (`VSDX`)      | float32   | m/s   | Yes         |
-| `vsd`         | Stokes drift northward velocity (`VSDY`)      | float32   | m/s   | Yes         |
-
-Finally, notice that the bathymetry differs from the one in GLORYS12.
-
-| Variable name    | Description                        | Data type   | Units |
-|------------------|------------------------------------|-------------|-------|
-| `waverys_deptho` | Depth of the ocean below the geoid | float32     | m     |
-| `waverys_mask`   | WAVERYS sea/land mask              | int8 (bool) | -     |
-
-[^2]: Global Ocean Waves Reanalysis. E.U. Copernicus Marine Service Information (CMEMS). Marine Data Store (MDS). DOI: 10.48670/moi-00021 (Accessed on 10-Oct-2025)
+WAVERYS wave variables were part of the first version and are no longer included: their sea and ice masks differ from GLORYS12's (no sea north of about 81°N, waves missing where ERA5's ice cover exceeds about 0.3). The findings are kept in the notes on coarsening.
 
 ### Atmospheric
 
@@ -104,37 +68,33 @@ Dynamical atmospheric variables are derived from the ERA5 dataset available as a
 
 The question regarding which atmospheric variables one should include in the training of a data-driven ocean circulation model is still an open research one. As an example, at the moment of writing, some competitive models use just the air temperature at 2 metres and the wind velocity at 10 metres above the surface ([El Aouni et al., 2024](https://arxiv.org/abs/2412.05454)), or even just the winds ([Wang et al., 2024](https://arxiv.org/abs/2402.02995)). Another obvious starting point is using the variables used by numerical models, as [NEMO](https://www.nemo-ocean.eu/doc/node27.html) or [MITgcm](https://mitgcm.readthedocs.io/en/latest/phys_pkgs/exf.html#ssub-phys-pkg-exf-inputs-units), an approach closer to that followed by [Cui et al., 2025](https://doi.org/10.1038/s41467-025-57389-2).
 
-The wind stress, the evaporation, and the latent and sensible heat fluxes can be computed using bulk formulae (for a discussion of their parametrization in NEMO see [Bonino et al., 2022](https://doi.org/10.5194/gmd-15-6873-2022)), starting from the air density and pressure. In turn, the former can be computed from temperature and specific humidity. In particular, we included the dew point temperature at 2 metres above the surface, but not the lowest level of the 3D specific humidity, following the [ECMWF guidelines for computing the surface (2m) specific humidity](https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#heading-Guidelines). Also, precipitations, wind gusts and variables relevant for radiative transfers were included.
+The wind stress, the evaporation, and the latent and sensible heat fluxes can be computed using bulk formulae (for a discussion of their parametrization in NEMO see [Bonino et al., 2022](https://doi.org/10.5194/gmd-15-6873-2022)), starting from the air density and pressure. In turn, the former can be computed from temperature and specific humidity. In particular, we included the dew point temperature at 2 metres above the surface, but not the lowest level of the 3D specific humidity, following the [ECMWF guidelines for computing the surface (2m) specific humidity](https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#heading-Guidelines). Also, precipitation and the variables relevant for radiative transfer were included.
 
-The temporal resolution of the ARCO-ERA5 dataset is 1 hour; therefore, it had to be resampled at a daily resolution. This means that all variables should be intended as averages over the time interval of 24 hours, including, for example, the instantaneous wind gusts.
+The temporal resolution of the ARCO-ERA5 dataset is 1 hour; therefore, it had to be resampled at a daily resolution. The instantaneous fields are averages of the 24 hours of each day (00:00 to 23:00 UTC). The accumulated fields (precipitation, radiation) are sums over the same hours: ERA5 stamps an hourly accumulation at the end of its hour, so they are moved back one hour first, and day D sums its own hours, not the last hour of the day before. At 0.25° the fields are on ERA5's own grid; at 0.5° and 1° they are regridded conservatively.
 
-The total precipitation in the dataset comprises both rainfall and snowfall, and is obtained from the variable `total_precipitation` in the ARCO-ERA5 dataset, which contains the accumulated value in the last hour. After resampling its value has been rescaled to the total precipitation in the previous day (by multiplying by 24 hours, after averaging). Similar considerations apply to solar and terrestrial radiation variables, which contain accumulated values.
+| Variable name | Description                                                      | Data type | Units | Assimilated |
+|---------------|------------------------------------------------------------------|-----------|-------|-------------|
+| `2t`          | Temperature of air at 2m                                         | float32   | K     | Yes         |
+| `2d`          | Dew point temperature of air at 2m                               | float32   | K     | Yes         |
+| `mslp`        | Mean sea level pressure                                          | float32   | Pa    | Yes         |
+| `10u`         | Eastward wind velocity at 10m                                    | float32   | m/s   | Yes         |
+| `10v`         | Northward wind velocity at 10m                                   | float32   | m/s   | Yes         |
+| `ssrd`        | Shortwave radiation at surface (positive downward), daily total  | float32   | J/m^2 | No          |
+| `strd`        | Longwave radiation at surface (positive downward), daily total   | float32   | J/m^2 | No          |
+| `tp`          | Total precipitation (rain and snow), daily total                 | float32   | m     | Yes         |
 
-| Variable name | Description                                        | Data type | Units | Assimilated |
-|---------------|----------------------------------------------------|-----------|-------|-------------|
-| `2t`          | Temperature of air at 2m                           | float32   | K     | Yes         |
-| `2d`          | Dew temperature of air at 2m                       | float32   | K     | Yes         |
-| `sp`          | Pressure of the atmosphere at the surface          | float32   | Pa    | Yes         |
-| `ssrd`        | Shortwave radiation at surface (positive downward) | float32   | J/m^2 | No          |
-| `strd`        | Longwave radiation at surface (positive downward)  | float32   | J/m^2 | No          |
-| `tp`          | Hourly total precipitation rate                    | float32   | m     | Yes         |
-| `10u`         | Eastward wind velocity at 10m                      | float32   | m/s   | Yes         |
-| `10v`         | Northward wind velocity at 10m                     | float32   | m/s   | Yes         |
-| `i10fg`       | Maximum wind gust at 10m at specified time         | float32   | m/s   | No          |
+Time invariants are read from the same ARCO-ERA5 store at one stamp, 2000-01-01 00:00, and stored once, without the time dimension. ERA5 stores them as hourly series of the same values (identical on 1993-01-01, 2000-01-01, 2010-07-01 and 2021-06-30), except `z` from 2022-10-01 on, which differs at the two polar rows. The climatology and the anomaly standard deviation leave them out, with the other static variables.
 
-Time invariants are taken from one of the publicly available datasets at this Google Cloud bucket: [gs://weatherbench2/datasets](https://console.cloud.google.com/storage/browser/weatherbench2/datasets) and part of WeatherBench2 [^5]
-
-| Variable name | Description                                             | Data type | Units   |
-|---------------|---------------------------------------------------------|-----------|---------|
-| `z`           | Gravitational potential energy per unit mass at surface | float32   | m^2/s^2 |
-| `lsm`         | Fraction of land in a grid cell                         | float32   | -       |
+| Variable name | Description                                                      | Data type | Units   |
+|---------------|------------------------------------------------------------------|-----------|---------|
+| `z`           | Gravitational potential energy per unit mass at surface (static) | float32   | m^2/s^2 |
+| `lsm`         | Fraction of land in a grid cell (static)                         | float32   | -       |
 
 [^3]: Carver, Robert W, and Merose, Alex. (2023): ARCO-ERA5: An Analysis-Ready Cloud-Optimized Reanalysis Dataset.
 22nd Conf. on AI for Env. Science, Denver, CO, Amer. Meteo. Soc, 4A.1, [https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842](https://ams.confex.com/ams/103ANNUAL/meetingapp.cgi/Paper/415842)
 
 [^4]: Copernicus Climate Change Service, Climate Data Store, (2023): ERA5 hourly data on single levels from 1940 to present. Copernicus Climate Change Service (C3S) Climate Data Store (CDS). DOI: 10.24381/cds.adbb2d47 (Accessed on 10-Oct-2025)
 
-[^5]: Rasp, S. et al. WeatherBench 2: A benchmark for the next generation of data-driven global weather models. Preprint at https://doi.org/10.48550/arXiv.2308.15560 (2024).
 
 ### Hydrological
 
@@ -142,14 +102,11 @@ Hydrological variables and their auxiliary data are derived from historical GloF
 
 River runoff is required to compute the freshwater budget of the ocean, along with the evaporation, sea ice, and precipitation. For this reason, ARCO-OCEAN contains the discharge of global rivers (including sediments, chemical and biological material) in the last 24 hours, taken from GloFAS. This value, although not assimilated, is computed by forcing a hydrological model with an atmospheric reanalysis (ERA5). Whether a machine learning model could make use of this information and, for example, remove the contribution of sediments to the volumetric flow rate is still an open research question.
 
-| Variable name | Description                    | Data type | Units | Assimilated |
-|---------------|--------------------------------|-----------|-------|-------------|
-| `dis24`       | Mean discharge in the last 24h | float32   | m^3/s | No          |
+| Variable name   | Description                                                     | Data type | Units | Assimilated |
+|-----------------|-----------------------------------------------------------------|-----------|-------|-------------|
+| `dis24_outlets` | River discharge into the ocean, metres per day over each cell   | float32   | m     | No          |
 
-| Variable name | Description                       | Data type   | Units |
-|---------------|-----------------------------------|-------------|-------|
-| `uparea`      | Upstream area of each river pixel | float32     | m^2   |
-| `glofas_mask` | GloFAS land/sea mask              | int8 (bool) | -     |
+The discharge (GloFAS v5.0, mean of 24 h) is taken at the pits of GloFAS's drainage network (local drain direction 5, from the v4.0 auxiliary data), where rivers end, divided by the area of the cell and regridded conservatively: like a daily precipitation total, and the global total is kept (checked at every step). The discharge of a cell, in m^3/s, is the value × `areacello` / 86400. The ocean model links the outlets to its coast; pits of basins without an outlet to the sea (Caspian, Lake Chad) are included.
 
 [^6]: Grimaldi, S., Salamon, P., Disperati, J., Zsoter, E., Russo, C., Ramos, A., Carton De Wiart, C., Barnard, C., Hansford, E., Gomes, G., Prudhomme, C. (2022): River discharge and related historical data from the Global Flood Awareness System, v4.0. European Commission, Joint Research Centre (JRC). DOI: 10.24381/cds.a4fdd6b9 (Accessed on 10-Oct-2025)
 
@@ -158,90 +115,225 @@ River runoff is required to compute the freshwater budget of the ocean, along wi
 
 ### Notes on regridding, null values, and masking
 
-One of the post-processing steps of the ARCO-OCEAN dataset is regridding, which requires special care. In particular, problems arising from dealing consistently with missing values (NaNs) and invalid points (e.g., land points) when regridding are peculiar of ocean data, as they have no analogue in weather datasets, and having control over them is crucial.
+All fields are regridded conservatively with `xarray-regrid` ([Schilperoort et al., 2025](https://doi.org/10.5281/zenodo.15176942)), which averages the source cells under each target cell weighted by their overlap.
 
-On the one hand, they contain important information (i.e., about the domain geometry), on the other, uncaught NaNs would propagate and lead to NaN pollution in most machine learning models. Indeed, accelerated tensor manipulation libraries used to implement these models can't usually skip NaNs in calculations as Numpy does.
+- Ocean fields: averages over the sea part of each cell. A cell is sea (has values) where `seafrac > 0`, i.e. where GLORYS12 has some sea cell: GLORYS12's 3D mask regridded is `seafrac`, so the domain is static and every regridded value has a cell. The few sea cells where GLORYS12 has no value (its gaps, the same every day) take the nearest value above in the same column, or 0 if none. Outside the sea, values are missing (NaN).
+- Sea ice: averages over the sea part, no ice as 0 (section above).
+- River discharge: a flux per unit area, regridded with missing values as 0.
+- ERA5: values everywhere. The `land_sea_mask`, renamed `lsm`, is ERA5's fraction of land in each cell, which is not GLORYS12's sea: use `seafrac` for the ocean.
 
-In most applications, conservative regridding (i.e., preserving the integral of the source field between grids) is the go-to choice for continuous scalar fields. Notice that WeatherBench datasets use first order conservative regridding also for vector fields, and so has been done in ARCO-OCEAN. The regridding routine is implemented using the `xarray-regrid` Python package ([Schilperoort et al., 2025](https://doi.org/10.5281/zenodo.15176942)), which is based on the `conservative_normed` method provided by `xESMF` ([Zhuang et al., 2025](https://doi.org/10.5281/zenodo.15304267)) plus [minor modifications suggested by Stephan Hoyer](https://github.com/xarray-contrib/xarray-regrid/blob/eef312a2ee0fa5cae94814d72f17438f77ec9e5b/src/xarray_regrid/methods/conservative.py#L49-L54).
+The [notes on coarsening ocean datasets](docs/coarsen-ocean-datasets.md) explain these choices, with measurements at 0.25°, 0.5° and 1°: which coarse cells to call sea, how the water of each layer is kept, how gaps are filled, sea ice and river discharge.
 
-The `conservative_normed` algorithm relies on computing overlapping areas between cells of the source and destination grid, then normalizing the target grid values by the fraction of source grid cells actually containing a value. This allows handling missing values (NaNs) without adding excessive overhead. However, it can happen that the destination grid cell does not overlap with any valid source grid cell. These divisions by zero are usually not a problem, as in that case the target grid would contain a NaN anyway.
+Every block of the download is checked before it is written: a complete daily time axis, the grid convention, ocean and sea ice values exactly where `seafrac > 0` and every other variable everywhere, and a `long_name` and `units` on every variable, no two variables sharing a `long_name`. `configs/validate/historical.toml` checks a whole dataset the same way, given its dates: `arco-make validate --start 1993-01-01 --end 2026-07-01 configs/validate/historical.toml DATASET`.
 
-Nearest-neighbor interpolation is usually the right choice for categorical variables, as is the case for land/sea masking, where using other interpolation algorithms would imply the choice of some arbitrary threshold value. This, together with previous considerations on the `conservative_normed` algorithm imply that in general there will be land points in the target grid with assigned not-null values, which is not a problem as they can be masked out later. However, it also means that sea grid cells might contain null values.
+The sources' versions, the limitations their producers document, and how they fit together (the ocean forced by another atmosphere before 2019, climatological runoff) are in [docs/sources.md](docs/sources.md).
 
-The situation described relates to a single source dataset and a 2D mask. When working with multiple datasets, the situation is even more complex, as they might use a different definition of coastline, or exclude smaller islands, for example. For such reasons, the following approach was used in producing the ARCO-OCEAN dataset:
+## Producing and extending the dataset
 
-1. Each dataset includes his own land mask. In the case of ERA5, the associated variable is called `land_sea_mask` keeping the name used in the WeatherBench dataset. For all the other datasets, the mask is computed from auxiliary data and the variables is named `<name of the dataset>_mask`.
-2. Masks related to atmospheric or hydrological variables use the convention of assigning `True` to land and `False` to sea, ocean and wave variables do the other way around.
-3. The ERA5 `land_sea_mask` is taken as-is from the original dataset, just renamed to `lsm`. Technically, it is not a mask as its values vary continuously between 0 and 1. The other masks are computed from auxiliary data (which are also included in ARCO-OCEAN). In particular, the `glofas_mask` is true where the `uparea` variable is not null, the `waverys_mask` where the `deptho` variable (from the WAVERYS dataset) is not null. The `glorys_mask` derivation is more involved, and is the subject of the following paragraph.
+The recipes have no dates: the command gives them, so one recipe serves the first download and
+every later extension, and the fingerprint of the recipe recorded in each commit stays the same.
 
-For `glorys12_mask`, we avoid the problem of regridding the original mask, and compute a new mask from a given discretization of the vertical dimension and suitable bathymetry, which is a continuous field and can be eventually regridded. A cell is considered valid, hence a sea point, if half of its volume is filled with water, i.e., if the bathymetry at that point is below the cell center. The bathymetry has been taken from the `deptho` variable defined in GLORYS12, and has been regridded using a conservative algorithm to 0.25°. The depth coordinate has been subsampled to 10 levels, as described in the paragraph on ocean and sea ice variables.
+```bash
+# The whole period, at one resolution (about three days on the project machine).
+scripts/download.sh --start 1993-01-01 --end 2026-07-01 historical_res-0p25
+# Later: the days after the last stored one, as a new version, once every source has them as
+# final data (ERA5 lags by about three months).
+scripts/download.sh --extend --end 2026-10-01 historical_res-0p25
+```
 
-The illustrated procedure does not solve the problem of valid cells containing missing values, though. To solve it, we used a filling routine averaging the values of surrounding cells. This is reminiscent of the approach followed by GraphCast ([Lam et al., 2023](https://doi.org/10.1126/science.adi2336)) to deal with random cases of NaNs in ERA5. To speed up the computation in Python, we computed such averages by means of Gauss blurring, corrected to take missing values into account in the same way as in the `conservative_normed` algorithm. The implementation makes use of `scipy.ndimage.gaussian_filter` (see [documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html) for more details), with parameters `mode=mirror`, `radius=4` and `sigma=1.0`. This approach was used for the variables `so`, `thetao`, `vo`, `mlotst`, and `zos` in GLORYS12, and for `dis24` in GloFAS.
+Each commit of a repository records how it was made, in its metadata: the version and commit of
+arco-make, the versions of the packages that decide the values, and the recipe's fingerprint.
 
-Finally, it is worth noting that in GLORYS12 sea ice variables are null on most of the domain, as they are represented using NaNs where the sea ice is absent. Henceforth, variables `usi`, `vsi`, `sithick`, and `siconc` are simply set to zero within `glorys_mask` and leaved to their original values elsewhere.
+### Forecasts
+
+The forecast repositories (`forecast/res=<res>`, recipes `configs/download/forecast_res-<res>.toml`)
+hold daily forecast runs on the grid and with the variables of the historical dataset: the
+00 UTC run of each day, its 10 lead days, the last five years of runs. The sources are the
+forecasts of the historical ones: GLO12, the Copernicus Marine analysis and forecast, for
+GLORYS12 (with GLO12's own static fields: its sea differs from GLORYS12's in about 0.4 % of the
+native cells, and `volcello` counts its partial bottom cells, which GLORYS12's static product does
+not give: 0.75 % less water in all, up to 7 % less in the deepest levels, more in level 48, which
+takes in level 49; the `deptho` comments tell how each product's sea floor differs from its
+water column); IFS HRES from ECMWF's open data for ERA5 (the static `z` and `lsm` stay ERA5's);
+the GloFAS forecast's control member for GloFAS's discharge. `scripts/forecast.sh` collects
+them at every resolution: the first time with `--start`, from the end of the historical dataset,
+then every day, adding the runs after the last stored one (a missed day is caught up).
+
+```bash
+# The first time: every run from the end of the historical dataset to today's.
+scripts/forecast.sh --start 2026-07-01
+# Then every day at 12:00 UTC, from systemd (below), with the heartbeat for the web page:
+scripts/install_units.sh -- --env-file FILE     # and --image FILE or --virtual-env DIR
+```
+
+The daily collection runs as systemd user units, versioned in `systemd/`:
+`arco-ocean-forecast.timer` starts `arco-ocean-forecast.service`, which runs
+`scripts/forecast.sh --status-url s3://ogs-arco-ocean/status/forecast.json` with the options given
+to `scripts/install_units.sh` after `--`. 12:00 UTC is two hours after the last source published
+today's run on 23 Nov 2026 (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between
+09:45 and 10:00), so that a late release still makes it; a run still missing is tried again
+(below), else the next day. Compared with cron:
+- a day the machine was off is collected when it starts again, and a collection still running is
+  not started twice;
+- a collection that hangs is stopped after 20 hours (its heartbeat ends aborted, the next one
+  resumes), and one that takes more than 80 % of the machine's memory is killed;
+- the output goes to the journal (`journalctl --user -u arco-ocean-forecast`), the next and last
+  runs are shown by `systemctl --user list-timers`; the unit fails only when a download does (a
+  run not published yet ends `forecast.sh` with 75, a success for the unit).
+
+The installer links the units from the checkout (after a `git pull` that changes them:
+`systemctl --user daemon-reload`) and writes the machine's part, the checkout and the options, in
+a drop-in (`~/.config/systemd/user/arco-ocean-forecast.service.d/local.conf`); run it again to
+change the options, or from another checkout to move the units there. `--uninstall` stops the
+timers and a collection running and removes what the installer wrote (drop-ins of your own, from
+`systemctl --user edit`, stay). The user's units run only while the user
+is logged in, unless lingering is on (once: `sudo loginctl enable-linger $USER`). A collection
+can still be run by hand (`systemctl --user start arco-ocean-forecast`, or `scripts/forecast.sh`):
+collections never overlap.
+
+A run whose sources have not all published it yet (younger than two days) is not stored: the
+runs before it are, and it is tried again (every 30 minutes, 6 times), else collected the next
+day; older, a source without it gives NaN, flagged. Collections never overlap. GLO12 overwrites its past
+releases: a run collected after its day (the backfill, a missed day) holds the values of later
+releases. Each component has a flag variable (`ifs_forecast`, `glofas_forecast`,
+`glo12_forecast`; `init_time` x `lead_time`), true where its values are its run's own forecast,
+false where they come from later releases or are missing (a source without the run: NaN).
+
+With `--status-url`, the collection publishes a heartbeat, `status/forecast.json` in the bucket,
+which the [web page](#web-page) reads: the collection's state (`running`, `finished`, `aborted`),
+each resolution's (`pending`, `downloading`, `finished`, `not_published`, `failed`), and each
+repository's newest run, number of runs and flags. `scripts/forecast_status.py` writes it, with the
+Python and the AWS profile of the arco-make that downloads (`--virtual-env`, or the image); it is
+updated at each step and every 5 minutes while the collection runs (`--heartbeat`). A collection
+that fails, or is stopped by a signal it can trap, ends its heartbeat as aborted; one killed
+outright (or whose machine goes down) stops beating, and the page calls it stale after three
+missed beats. A finished collection becomes stale when the next has not finished within 30 hours
+(`--stale-after`), and is stale at once when a resolution falls behind by more than the recipes'
+`missing_after` (two days, `--missing-after`, published with the heartbeat): its newest stored
+run older than that, or the resolution waiting for its sources for longer (a source that stopped
+publishing keeps it waiting every day, while the older runs are stored without it, flagged). The
+heartbeat never stops a collection: a failure to publish it is logged in
+`logs/forecast/status.log`.
+
+A watchdog, `.github/workflows/forecast-watchdog.yml`, reads the heartbeat every 30 minutes from
+GitHub's machines, judges it as the page does (`site/status.js`), and keeps an issue labelled
+`forecast-alert` open from the moment the collection is stale, aborted or unknown until a
+collection finishes, assigned to the maintainers: GitHub emails them when the incident starts,
+when it changes (another state, or another collection) and when the watchdog closes the issue.
+Closing it by hand acknowledges the incident: only the next opens another issue. A heartbeat that
+cannot be read for three minutes is unknown. Running outside the machine that collects, the
+watchdog also reports that machine down. It is off until the repository's
+Actions variables give the heartbeat's URL, `FORECAST_STATUS_URL`
+(`https://ogs-arco-ocean.s3.eu-south-1.amazonaws.com/status/forecast.json`), and the logins to
+assign, `ALERT_ASSIGNEES` (comma-separated). GitHub disables the schedules of a public repository
+after 60 days without activity, warning by email first. The collecting machine keeps it enabled:
+`scripts/install_units.sh --keepalive` (`--keepalive-repo OWNER/REPO` for another repository than
+`inogs/arco-ocean`) adds a daily unit that runs
+`scripts/keep_watchdog_enabled.sh`, which enables the watchdog again if GitHub disabled it for
+inactivity (a workflow disabled by hand stays so), and otherwise asks GitHub to enable it anyway,
+which tools doing the same report to reset the count of days (GitHub does not document it). It
+needs `gh` and a token in `~/.config/arco-ocean/github-token`, readable by its owner only
+(`chmod 600`): a fine-grained personal access token for this repository alone, with the
+repository permission "Actions: Read and write" and nothing else. GitHub emails before the token
+expires; a failed keepalive shows in `systemctl --user list-units --failed`. Without it, enable
+the workflow again in the Actions tab.
+
+### Checks
+
+`uvx pre-commit run --all-files` runs the checks made before each commit: TOML and YAML syntax,
+ruff, ShellCheck, REUSE and a secret scan. `uv run --frozen --only-group notes pytest tests` loads
+every recipe with the models of the pinned arco-make (an unknown key, step or argument fails),
+runs the examples of the coarsening notes, and tests the forecast heartbeat and the systemd units
+(their installer and the watchdog's keepalive, with stand-ins for `systemctl` and `gh`; the units
+checked by `systemd-analyze verify`); the pre-commit checks
+also test the web page's and the watchdog's logic (`node --test site/status.test.mjs
+scripts/forecast_watchdog.test.mjs`, Node.js from `uvx`). CI runs both on every pull request.
 
 ## Data format
 
-The dataset uses Zarr format version 2. The dataset has four dimensions. The longitude and latitude dimensions are named `lon` and `lat`, respectively. The time dimension is named `time`, and finally the vertical dimension is named `level`. All dimensions but `level` have a corresponding coordinate variable, the latter has also an auxiliary coordinate named `depth`. The latitudes are in the range [-90, 90], and the longitudes are in the range [0, 360], following the [convention used by the ECMWF](https://confluence.ecmwf.int/display/CKB/ERA5%3A+What+is+the+spatial+reference#ERA5:Whatisthespatialreference-Coordinatesystem). The level coordinate corresponds to the original vertical levels in GLORYS12, and similarly for depth. The time coordinate uses the proleptic Gregorian calendar and unit "days since 2000-01-01 00:00:00" (UTC). Notice that when loaded with XArray, it will have nanosecond resolution, but only the date part is relevant as the dataset has daily resolution.
+Each resolution is an [Icechunk](https://icechunk.io) repository: a [Zarr version 3](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html) dataset with versions, whose `main` branch is the current one. The dataset has the dimensions `time`, `depth`, `lat` and `lon` (and `bnds`, for the cell bounds), each with its coordinate. The latitudes increase within [-90, 90], and the longitudes are in the range [0, 360), following the [convention used by the ECMWF](https://confluence.ecmwf.int/display/CKB/ERA5%3A+What+is+the+spatial+reference#ERA5:Whatisthespatialreference-Coordinatesystem); the grid's polar rows are centred on the poles and half as tall. The depth coordinate is GLORYS12's level depths. The time coordinate uses the proleptic Gregorian calendar and unit "days since 1993-01-01" (UTC), one stamp per day at 00:00.
 
-All variables use single precision floating point numbers, except masks which use one byte integer values. They use C order (row-major) storage, with time as the leading (slowest varying) dimension, followed by level (when present), then latitude, and finally longitude. The dataset is chunked along the time dimension, with a chunk size of 1 day. At a resolution of 0.25°, the latter corresponds to 4MB chunks in memory, and a disk footprint of ocean variables chunks ranging from 500KB to 2.8MB depending on the content of the chunk and compression ratio. Indeed, masked values, about 70% of the domain, are NaNs, sea ice variables are 0.0 or NaN on most of the domain. The total size of the dataset at this resolution is about 1.3TB.
+Variables are single precision floating point numbers, stored with time as the leading (slowest varying) dimension, followed by depth (when present), then latitude, and finally longitude. A chunk is one day and one level of a variable over the whole grid; chunks are grouped in shards of 8 days and all levels, a day's levels next to each other, so a whole profile of a day is read in a few requests. Chunks are compressed with Blosc (LZ4, level 1, byte shuffle). Static variables (`seafrac`, `deptho`, the cell measures, `z`, `lsm`) have no time dimension.
 
-The climatology is referred to the whole period of the time series, which is slightly shorter than the WMO definition of climatological normal (i.e. [30 years](https://community.wmo.int/en/activity-areas/climate-services/climate-products-and-initiatives/wmo-climatological-normals)), and does not coincide with a standard climatological normal (the closest would be 1990–2020). However, for practical purposes, it is a good approximation. The mean and standard deviation, which are rarely used in climate applications, can be used to compute the standard score of the input features in machine learning models. Some autoregressive forecasting models predict future states by means of increments or residual (as GraphCast). For such models it is useful to standardize the output features, which can have wildly different magnitudes and would otherwise make it harder to train the underlying neural networks. For this reason, the standard deviation of increments is provided.
+The forecast repositories have the dimensions `init_time` (the run, 00 UTC of its day),
+`lead_time` (0 to 9 days), `depth`, `lat` and `lon`, and the coordinate `valid_time` (`init_time`
+\+ `lead_time`, the day a value is for, as `time` in the historical dataset). A chunk is one run,
+lead day and level over the whole grid; a shard holds a whole run. IFS daily means take 8
+samples a day to day 5, then 4 (ERA5's: 24); the GloFAS forecast is the operational model (v4.x
+in November 2026), the historical dataset GloFAS v5.0.
 
-The climatology is computed by converting the calendar from `gregorian_proleptic` to `365_day` with XArray beforehand, effectively dropping the 29th of February of leap years.  It has a `dayofyear` dimension containing the progressive number of days since the beginning of the year, in a non-leap year, and uses a chunk size of 1 along that dimension (all the others are unchunked). The other stats are computed using the full timeseries. The `<dataset_name>_diff_std` dataset is computed assuming the average increment is zero. This is reasonable, as the series of increments is a telescopic series and its average is equal to the difference between the last element and the first one over the number of elements, which converges to zero for a sufficiently long series.
+The statistics (the climatology and the anomaly standard deviation, from `scripts/climatology.sh`) are computed over the reference period 1993-2023, a 30-year normal as climatological normals are. Models evaluated on years inside it see them in their normalization.
+
+The climatology and the anomaly standard deviation have 365 bins along `time`, the days of a 365-day year (0 = Jan 1). Feb 29 values are pooled with Feb 28 (bin 58), and the later days of leap years use the bin of the same date: to index them, take the day of year minus 1, and minus 1 more after Feb 29 in leap years. Each bin is smoothed with a Gaussian window of 29 days (scale 7 days), counting only the values present.
 
 ## Data access
 
-The available ARCO-OCEAN dataset versions and their statistics are available via [AWS S3](https://aws.amazon.com/s3/) at the `s3://ogs-arco-ocean` bucket. Once you have the S3 URI pointing to a version of the dataset, you can either download it locally using the AWS CLI or open the dataset remotely, for example, using XArray. Say you want to work with the dataset located at `s3://ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10`.
+ARCO-OCEAN is available via [AWS S3](https://aws.amazon.com/s3/) in the `s3://ogs-arco-ocean` bucket, one Icechunk repository per product and resolution: `historical/res=<res>` for the dataset and `statistics/res=<res>` for its statistics, with `<res>` one of `0p25`, `0p5` and `1p0`. The statistics repository has two groups, `climatology` and `anomaly_std`, written together in one version.
 
-In the first case, you'll need to install the AWS CLI. See these instructions for [installing AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Once installed the AWS CLI, you can download the dataset using the following command:
-
-```bash
-aws s3 cp s3://ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10 /path/to/local/dataset --recursive --no-sign-request
-```
-
-In the second case, you'll need to have a Python environment with `xarray` and `zarr` installed, more information on how to install them can be found [here](https://docs.xarray.dev/en/stable/getting-started-guide/installing.html) and [here](https://zarr.readthedocs.io/en/stable/installation.html). You'll also need other dependencies and use a slightly different code depending on the version of Zarr-Python installed (Zarr-Python version 3 is currently still capable of reading a Zarr version 2 dataset, as ARCO-OCEAN).
-
-If you're using `zarr==2`, then `fsspec` and `s3fs` will also be needed, and you'll be able to open the dataset using the `FSStore` from `zarr.storage` as follows:
+With a Python environment holding `xarray` and `icechunk` ([installation](https://icechunk.io/en/latest/)), a dataset is opened lazily, without credentials:
 
 ```python
-import zarr
+import icechunk
 import xarray as xr
 
-# see https://zarr.readthedocs.io/en/support-v2/api/storage.html#zarr.storage.FSStore for more information
-store = zarr.storage.FSStore(url='s3://ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10', mode='r', anon=True)
-
-dataset = xr.open_dataset(store, engine='zarr')
+storage = icechunk.s3_storage(
+  bucket="ogs-arco-ocean",
+  prefix="historical/res=0p25",
+  region="eu-south-1",
+  anonymous=True,
+  # Icechunk waits 60 s by default for a stalled answer from S3; asking again sooner is faster.
+  network_stream_timeout_seconds=20,
+)
+repo = icechunk.Repository.open(storage)
+dataset = xr.open_zarr(repo.readonly_session("main").store, consolidated=False)
 ```
 
-If you're using `zarr==3`, then you'll need to install also `obstore`, and then use the `ObjectStore` from `zarr.storage` as follows:
+The statistics open the same way from `statistics/res=<res>`, one group at a time (`xr.open_zarr(store, group="climatology", consolidated=False)`, or `group="anomaly_std"`), or both together with `xr.open_datatree(store, engine="zarr", consolidated=False)`.
 
-```python
-import xarray as xr
-from zarr.storage import ObjectStore
-from obstore.store import S3Store
+A download writes its blocks one commit at a time on a branch of its own, and `main` moves to the last of them only once the run is complete: `main` is always a whole version. The previous version is kept for a while (the recipes' `keep_versions = 2`); `main`'s history also lists the commits of single blocks, which are not whole versions.
 
-# see https://zarr.readthedocs.io/en/stable/user-guide/storage.html#object-store for more information
-s3_store = S3Store('ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10', skip_signature=True, region='eu-south-1')
-store = ObjectStore(store=s3_store, read_only=True)
-dataset = xr.open_dataset(store, engine='zarr')
-```
-
-The dataset can be accessed using the Hive partition format `s3://ogs-arco-ocean/dataset/<dataset_name>_tres-<time_resolution>_res-<horizontal_resolution_in_deg>_levels-<number_of_vertical_levels>`. At the moment, we distribute a single version with full path `s3://ogs-arco-ocean/dataset/tres=1d/res=0p25/levels=10`.
-
-Along with the main dataset, statistics computed with respect to the time dimension are also provided. These are the climatology, the mean, the standard deviation, and the standard deviation of the increments between consecutive time steps. These can be accessed using paths: `s3://ogs-arco-ocean/stats=<stats_name>/tres=<time_resolution>/res=<horizontal_resolution_in_deg>/levels=<number_of_vertical_levels>`, where `<stats_name>` is one of `climatology`, `mean`, `std`, or `diff_std`.
+The first version of ARCO-OCEAN (0.25°, 10 levels, waves, Zarr version 2) stays in the bucket until the new one replaces it; its description is in this repository's history.
 
 ## Tutorials
 
-1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.ipynb)
+1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.py) (written for the first version: its paths and variables are those of the 0.25°, 10-level dataset)
+
+The tutorials are [marimo](https://marimo.io) notebooks: `uvx marimo edit --sandbox tutorials/oni.py` opens one in an environment of its own, with the dependencies it lists.
+
+## Web page
+
+`site/` is the web page of ARCO-OCEAN: static files without a build step, deployed to GitHub
+Pages from `main` by `.github/workflows/pages.yml` (Pages enabled once, with "GitHub Actions" as
+source). Besides the dataset's description, it shows the state of the forecast collection,
+read every minute from its heartbeat (above): downloading, finished, stale or aborted, and each
+resolution's newest run. `site/status.js` decides the state; `site/dashboard.js` shows it. To
+preview it, serve the directory (`python -m http.server -d site`, module scripts do not load from
+`file://`); `?status=URL` reads another heartbeat, e.g. the test copy in the bucket's
+`experiments/status/forecast.json`.
 
 ## License
 
-This dataset is released for use under the CC-BY license. Highlights and key features of the license are provided [here](https://creativecommons.org/licenses/by/4.0/). Full legal text is provided [here](https://creativecommons.org/licenses/by/4.0/legalcode).
+The datasets (historical, statistics and forecasts) are released under the Creative Commons Attribution 4.0 International licence, CC BY 4.0 ([summary](https://creativecommons.org/licenses/by/4.0/), [legal code](https://creativecommons.org/licenses/by/4.0/legalcode)). They are derived from the sources below, whose licences ask that they be credited: each dataset's global `attribution` attribute does so, in the forms the licences prescribe, and must accompany any redistribution of the data or of products derived from them.
+
+| Source | In | Licence | Credit required |
+|---|---|---|---|
+| GLORYS12, Copernicus Marine Service ([10.48670/moi-00021](https://doi.org/10.48670/moi-00021)) | historical, statistics: ocean, sea ice | [Copernicus Marine Service licence](https://marine.copernicus.eu/user-corner/service-commitments-and-licence) | "Generated using E.U. Copernicus Marine Service Information", with the DOIs, visible where the data are accessed |
+| GLO12, Copernicus Marine Service ([10.48670/moi-00016](https://doi.org/10.48670/moi-00016)) | forecasts: ocean, sea ice | as GLORYS12 | as GLORYS12 |
+| ERA5, Copernicus Climate Change Service ([10.24381/cds.adbb2d47](https://doi.org/10.24381/cds.adbb2d47)) | historical, statistics: atmosphere; forecasts: static fields | CC BY 4.0 | "Contains modified Copernicus Climate Change Service information [year]" |
+| GloFAS v5.0 historical ([10.24381/cds.a4fdd6b9](https://doi.org/10.24381/cds.a4fdd6b9)) and GloFAS forecast ([10.24381/cds.ff1aef77](https://doi.org/10.24381/cds.ff1aef77)), Copernicus Emergency Management Service | river discharge | [CEMS-FLOODS datasets licence](https://ewds.climate.copernicus.eu/licences/cems-floods) | "Contains modified Copernicus Emergency Management Service information [year]" |
+| ECMWF IFS open data ([data.ecmwf.int](https://data.ecmwf.int/forecasts/), read from its copy on AWS) | forecasts: atmosphere | CC BY 4.0 and the [ECMWF terms of use](https://apps.ecmwf.int/datasets/licences/general/) | "based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)" |
+
+Under its licence, the rights in the modifications of the GloFAS data belong to their creators: the river discharge is released under CC BY 4.0 as the rest. The GloFAS forecasts are given for information only: they are not flood warnings. The Copernicus Marine Service licence (clause 2.6) asks that its record-keeping requirement be passed on: users of the ocean and sea-ice variables are asked to keep records of their use of the data, enough to document and trace it, and to make them available to the Copernicus Marine Service on reasonable notice.
+
+The code of this repository (scripts, recipes, documentation) is released under the MIT licence ([LICENSE](LICENSE)); the ONI tutorial, adapted from [Climatematch](https://comptools.climatematch.io/)'s, under its licences, CC BY 4.0 for the text and the BSD 3-Clause License for the code.
+
+## Use of AI tools
+
+The recipes, scripts and documentation of this repository have been written largely with AI coding assistants (Claude Code, by Anthropic), directed and reviewed by the maintainers, as has [arco-make](https://github.com/stefanocampanella/arco-make), the tool that produces the datasets. The recipes' outputs were checked on real data before the production run (arco-make's logbook records the checks). The commits made with an assistant name it in a `Co-Authored-By` trailer. The maintainers are responsible for the datasets and the code as published: please report problems as issues.
 
 ## Suggested attribution
 
 [//]: # (FIXME: Temporary. Come up with a better attribution)
 ```
-Campanella, S., Salon S., Querin, S., Bortolussi, L., and Stock, J.: ARCO-OCEAN: A dataset of physical properties of the ocean, waves, and sea ice, with hydrological and atmospheric forcing, optimized for machine learning. https://doi.org/10.5281/zenodo.17751608
+Campanella, S., Salon S., Querin, S., Bortolussi, L., and Stock, J.: ARCO-OCEAN: A dataset of physical properties of the ocean and sea ice, with hydrological and atmospheric forcing, optimized for machine learning. https://doi.org/10.5281/zenodo.17751608
 ```

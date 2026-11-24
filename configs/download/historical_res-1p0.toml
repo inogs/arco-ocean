@@ -1,0 +1,714 @@
+# SPDX-FileCopyrightText: 2026 Stefano Campanella
+# SPDX-License-Identifier: MIT
+# Chunks are planned by arco-make for each block (`arco-make download --plan` prints them).
+# The whole download takes a few days: the profile in [save] storage_options must allow that.
+time_dim = "time"
+# Dates come from the command (--start, --end; --extend appends to an output): see README.
+# 32-day blocks: about 25 s per day of data, memory levels off (arco-make logbook, 18 Nov).
+step = "32D"
+
+# The target grid of every regrid step, named by them.
+[grids.target]
+south = -90.0
+north = 90.0
+west = 0.0
+east = 359.0
+resolution_lat = 1.0
+resolution_lon = 1.0
+
+[[datasets.era5.parts]]
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+engine = "zarr"
+consolidated = true
+storage_options = {token = "anon"}
+
+[[datasets.era5.postprocess]]
+name = "select_variables"
+variables = [
+    "10m_u_component_of_wind",
+    "10m_v_component_of_wind",
+    "2m_dewpoint_temperature",
+    "2m_temperature",
+    "mean_sea_level_pressure"]
+
+[[datasets.era5.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.era5.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+grid = "target"
+
+[[datasets.era5.postprocess]]
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "mean"
+
+[[datasets.era5.postprocess]]
+name = "rename"
+
+[datasets.era5.postprocess.name_dict]
+10m_u_component_of_wind = "10u"
+10m_v_component_of_wind = "10v"
+2m_dewpoint_temperature = "2d"
+2m_temperature = "2t"
+mean_sea_level_pressure = "mslp"
+
+[[datasets.era5.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.era5.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.era5.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Fields constant in time that ERA5 stores as series (geopotential at the surface, land-sea
+# mask): read at one stamp, static (written once, not every day).
+[[datasets.era5_static.parts]]
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+engine = "zarr"
+consolidated = true
+storage_options = {token = "anon"}
+static_time = 2000-01-01T00:00:00
+
+[[datasets.era5_static.postprocess]]
+name = "select_variables"
+variables = [
+    "geopotential_at_surface",
+    "land_sea_mask"]
+
+[[datasets.era5_static.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.era5_static.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+grid = "target"
+
+[[datasets.era5_static.postprocess]]
+name = "rename"
+
+[datasets.era5_static.postprocess.name_dict]
+geopotential_at_surface = "z"
+land_sea_mask = "lsm"
+
+[[datasets.era5_static.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.era5_static.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon"]
+
+[[datasets.era5_static.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ERA5 hourly accumulations cover the hour ending at their stamp (the value stamped 00:00 is
+# the last hour of the previous day): moved back one hour, day D sums its own hours 00-23.
+[[datasets.era5_cumulative.parts]]
+filename_or_obj = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+time_offset = "-1h"
+engine = "zarr"
+consolidated = true
+storage_options = {token = "anon"}
+
+[[datasets.era5_cumulative.postprocess]]
+name = "select_variables"
+variables = [
+    "surface_solar_radiation_downwards",
+    "surface_thermal_radiation_downwards",
+    "total_precipitation"]
+
+[[datasets.era5_cumulative.postprocess]]
+name = "flip"
+dim = "latitude"
+
+[[datasets.era5_cumulative.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+grid = "target"
+
+[[datasets.era5_cumulative.postprocess]]
+name = "clip_negative"
+variables = ["total_precipitation"]
+
+[[datasets.era5_cumulative.postprocess]]
+name = "resample"
+time = "1 D"
+label = "left"
+closed = "left"
+reduce = "sum"
+
+[[datasets.era5_cumulative.postprocess]]
+name = "rename"
+
+[datasets.era5_cumulative.postprocess.name_dict]
+surface_solar_radiation_downwards = "ssrd"
+surface_thermal_radiation_downwards = "strd"
+total_precipitation = "tp"
+
+[[datasets.era5_cumulative.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.era5_cumulative.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.era5_cumulative.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ==== GLOFAS SECTION ====
+
+# River input to the ocean: the discharge at the pits of GloFAS's drainage network (local drain
+# direction 5, where rivers end), as metres of water per day over each coarse cell, like a daily
+# precipitation total; regridded conservatively, the total kept (checked). GloFAS v5.0 publishes
+# no drainage directions: v4.0's are on the same cells.
+[[datasets.glofas.parts]]
+filename_or_obj = "ewds://cems-glofas-historical"
+engine = "earlywarningdatastore"
+system_version = "version_5_0"
+hydrological_model = "lisflood"
+product_type = "consolidated"
+timespan = "time_mean"
+variable = "average_river_discharge_in_the_last_24_hours"
+
+[[datasets.glofas.parts]]
+filename_or_obj = "https://confluence.ecmwf.int/download/attachments/242067380/ldd_glofas_v4_0.nc"
+engine = "netcdfoverhttp"
+drop_variables = ["crs"]
+rename = {lat = "latitude", lon = "longitude"}
+# The file's coordinates differ from the discharge's by about 4e-12.
+coordinate_tolerance = 1e-9
+
+[[datasets.glofas.postprocess]]
+name = "keep_where"
+variables = ["avg_dis"]
+condition = "ldd"
+equals = 5
+
+[[datasets.glofas.postprocess]]
+name = "drop_vars"
+names = ["ldd"]
+
+[[datasets.glofas.postprocess]]
+name = "per_unit_area"
+variables = ["avg_dis"]
+factor = 86400.0
+radius = 6378100.0
+
+[[datasets.glofas.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = false}
+conservation_tolerance = 1e-6
+grid = "target"
+
+# No river south of GloFAS's domain (-60): 0 there, where the regridding leaves NaN.
+[[datasets.glofas.postprocess]]
+name = "fillna"
+value = 0.0
+
+[[datasets.glofas.postprocess]]
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
+
+[[datasets.glofas.postprocess]]
+name = "rename"
+name_dict = {avg_dis = "dis24_outlets"}
+
+[[datasets.glofas.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.glofas.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.glofas.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ==== GLORYS SECTION ====
+
+# All latitudes are read: the rows the static mask calls sea without values (-77 and 90) leave
+# no coarse sea cell empty. Level 49 (5728 m) is dropped: NEMO never computes it.
+[[datasets.glorys.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["uo", "vo", "so", "thetao", "zos"]
+dataset_version = "202311"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glorys.postprocess]]
+name = "isel"
+depth = {start = 0, stop = 49}
+
+[[datasets.glorys.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = true, nan_threshold = 1.0}
+grid = "target"
+
+[[datasets.glorys.postprocess]]
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
+
+[[datasets.glorys.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.glorys.postprocess]]
+name = "drop_var_attrs"
+variables = ["depth", "lat", "lon", "time"]
+
+[[datasets.glorys.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Sea ice over the sea part of each cell: concentration, and concentration times thickness
+# (volume per area) and times velocity, which regrid conservatively; GLORYS's thickness and
+# velocity (means over the ice) are sivol / siconc and usic / siconc. Missing (no ice) counts
+# as 0 here; the global steps divide by the sea fraction.
+[[datasets.glorys_seaice.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_P1D-m"
+engine = "copernicusmarine"
+variables = ["sithick", "siconc", "usi", "vsi"]
+dataset_version = "202311"
+dataset_part = "default"
+service = "arco-geo-series"
+
+[[datasets.glorys_seaice.postprocess]]
+name = "products"
+sivol = ["siconc", "sithick"]
+usic = ["siconc", "usi"]
+vsic = ["siconc", "vsi"]
+
+[[datasets.glorys_seaice.postprocess]]
+name = "select_variables"
+variables = ["siconc", "sivol", "usic", "vsic"]
+
+[[datasets.glorys_seaice.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = false}
+grid = "target"
+
+[[datasets.glorys_seaice.postprocess]]
+name = "astype"
+casting = "same_kind"
+dtype = "float32"
+
+[[datasets.glorys_seaice.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+[[datasets.glorys_seaice.postprocess]]
+name = "drop_var_attrs"
+variables = ["lat", "lon", "time"]
+
+[[datasets.glorys_seaice.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# Static: the sea fraction (GLORYS's 3D mask regridded: the share of each cell where the model
+# has a sea cell) and the mean depth (land as 0: the column's water); the sea mask (any water)
+# for the global steps, not published.
+[[datasets.glorys_static.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["deptho", "mask"]
+dataset_version = "202311"
+dataset_part = "bathy"
+service = "static-arco"
+
+# The layer thicknesses (depth only: regrid passes them through), for the depth bounds and the
+# sea volumes. Its depths differ from the bathymetry's by float32 rounding (at most 0.5 mm).
+[[datasets.glorys_static.parts]]
+filename_or_obj = "cm://cmems_mod_glo_phy_my_0.083deg_static"
+engine = "copernicusmarine"
+variables = ["e3t"]
+dataset_version = "202311"
+dataset_part = "coords"
+service = "static-arco"
+coordinate_tolerance = 0.001
+
+[[datasets.glorys_static.postprocess]]
+name = "isel"
+depth = {start = 0, stop = 49}
+
+[[datasets.glorys_static.postprocess]]
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
+
+[[datasets.glorys_static.postprocess]]
+name = "regrid"
+method = "conservative"
+latitude_dim = "latitude"
+longitude_dim = "longitude"
+kwargs = {skipna = false}
+grid = "target"
+
+# No sea south of GLORYS's domain (-80): 0 there, where the regridding leaves NaN.
+[[datasets.glorys_static.postprocess]]
+name = "fillna"
+value = 0.0
+
+[[datasets.glorys_static.postprocess]]
+name = "astype"
+dtype = "float32"
+casting = "same_kind"
+
+[[datasets.glorys_static.postprocess]]
+name = "rename"
+name_dict = {mask = "seafrac"}
+
+[[datasets.glorys_static.postprocess]]
+name = "fraction_mask"
+fraction = "seafrac"
+mask_name = "sea"
+threshold = 0.0
+tolerance = 1e-6
+
+[[datasets.glorys_static.postprocess]]
+name = "rename_coordinates"
+name_dict = {latitude = "lat", longitude = "lon"}
+
+# Cell geometry: CF bounds (horizontal: the cells conservative regridding assumes; depth: the
+# layers of e3t), the cell areas on GLORYS12's sphere (its static e1t and e2t imply a radius of
+# 6,378,100 m), and the sea volume of each cell.
+[[datasets.glorys_static.postprocess]]
+name = "cell_bounds"
+latitude_dim = "lat"
+longitude_dim = "lon"
+depth_dim = "depth"
+thickness = "e3t"
+
+[[datasets.glorys_static.postprocess]]
+name = "cell_area"
+variable = "areacello"
+latitude_dim = "lat"
+longitude_dim = "lon"
+radius = 6378100.0
+
+[[datasets.glorys_static.postprocess]]
+name = "products"
+volcello = ["seafrac", "e3t", "areacello"]
+
+[[datasets.glorys_static.postprocess]]
+name = "drop_vars"
+names = ["e3t"]
+
+[[datasets.glorys_static.postprocess]]
+name = "astype"
+areacello = {dtype = "float32", casting = "same_kind"}
+volcello = {dtype = "float32", casting = "same_kind"}
+
+[[datasets.glorys_static.postprocess]]
+name = "drop_var_attrs"
+variables = ["depth", "lat", "lon"]
+
+[[datasets.glorys_static.postprocess]]
+name = "drop_attrs"
+deep = false
+
+# ==== SAVING SECTION ====
+
+[[postprocess]]
+name = "transpose"
+dims = ["time", "depth", "lat", "lon", "bnds"]
+
+# Sea ice over the sea part of each cell (2D fields: the surface fraction).
+[[postprocess]]
+name = "divide_by"
+variables = ["siconc", "sivol", "usic", "vsic"]
+by = "seafrac"
+
+# Sea cells without values (GLORYS's gaps): the nearest value above, then 0 if none.
+[[postprocess]]
+name = "fill_from_above"
+variables = ["thetao", "so", "uo", "vo"]
+depth_dim = "depth"
+mask_name = "sea"
+
+[[postprocess]]
+name = "masked_fill"
+mask_name = "sea"
+fill_value = 0.0
+variables = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[[postprocess]]
+name = "apply_mask"
+mask_name = "sea"
+variables = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[[postprocess]]
+name = "drop_vars"
+names = ["sea"]
+
+[[postprocess]]
+name = "assign_var_attrs"
+
+[postprocess.lat]
+standard_name = "latitude"
+long_name = "latitude"
+units = "degrees_north"
+unit_long = "Degrees North"
+axis = "Y"
+bounds = "lat_bnds"
+
+[postprocess.lon]
+standard_name = "longitude"
+long_name = "longitude"
+units = "degrees_east"
+unit_long = "Degrees East"
+axis = "X"
+bounds = "lon_bnds"
+
+[postprocess.time]
+standard_name = "time"
+long_name = "time"
+axis = "T"
+
+[postprocess.depth]
+standard_name = "depth"
+long_name = "ocean depth below geoid"
+units = "m"
+positive = "down"
+axis = "Z"
+bounds = "depth_bnds"
+
+[postprocess.seafrac]
+long_name = "sea fraction"
+units = "1"
+comment = "Share of the cell's area where GLORYS12 has a sea cell at this level: its 3D mask regridded conservatively. Static. Values exist exactly where seafrac > 0. Sea volume of the cell: volcello = seafrac x layer thickness (depth_bnds) x areacello."
+
+[postprocess.deptho]
+standard_name = "sea_floor_depth_below_geoid"
+long_name = "mean sea-floor depth"
+units = "m"
+comment = "GLORYS12 deptho averaged conservatively over the cell, land as 0. GLORYS12's static deptho is not exactly the bottom of the water column its mask and layers give (the sum over levels of volcello / areacello): in each column it lies within about half a level of that bottom, above or below."
+
+[postprocess.thetao]
+standard_name = "sea_water_potential_temperature"
+long_name = "Temperature"
+units = "degrees_C"
+unit_long = "Degrees Celsius"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.so]
+standard_name = "sea_water_salinity"
+long_name = "Salinity"
+units = "1e-3"
+unit_long = "Practical Salinity Unit"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.uo]
+standard_name = "eastward_sea_water_velocity"
+long_name = "Eastward velocity"
+units = "m s-1"
+unit_long = "Meters per second"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.vo]
+standard_name = "northward_sea_water_velocity"
+long_name = "Northward velocity"
+units = "m s-1"
+unit_long = "Meters per second"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello volume: volcello"
+
+[postprocess.zos]
+standard_name = "sea_surface_height_above_geoid"
+long_name = "Sea surface height"
+units = "m"
+unit_long = "Meters"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+
+[postprocess.areacello]
+standard_name = "cell_area"
+long_name = "cell area"
+units = "m2"
+comment = "Area of the whole cell (land included) on a sphere of radius 6,378,100 m, the radius of GLORYS12's static cell sizes (e1t, e2t). The cell's sea area at the surface is seafrac x areacello."
+
+[postprocess.volcello]
+standard_name = "ocean_volume"
+long_name = "sea water volume"
+units = "m3"
+comment = "Sea water volume of the cell: seafrac x layer thickness (depth_bnds, from GLORYS12's e3t) x areacello. Sums of value x volcello are volume integrals (heat content, say); weights of a loss by water volume."
+
+[postprocess.siconc]
+standard_name = "sea_ice_area_fraction"
+long_name = "sea-ice concentration"
+units = "1"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "Ice area over the cell's sea area (GLORYS12 siconc, no ice as 0)."
+
+[postprocess.sivol]
+standard_name = "sea_ice_thickness"
+long_name = "sea-ice volume per area"
+units = "m"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "GLORYS12 siconc x sithick averaged over the cell's sea part. GLORYS12's thickness (mean over the ice) is sivol / siconc where siconc > 0."
+
+[postprocess.usic]
+long_name = "sea-ice concentration times eastward velocity"
+units = "m s-1"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "GLORYS12 siconc x usi averaged over the cell's sea part. The ice velocity (mean over the ice) is usic / siconc where siconc > 0."
+
+[postprocess.vsic]
+long_name = "sea-ice concentration times northward velocity"
+units = "m s-1"
+cell_methods = "area: mean where sea"
+cell_measures = "area: areacello"
+comment = "GLORYS12 siconc x vsi averaged over the cell's sea part. The ice velocity (mean over the ice) is vsic / siconc where siconc > 0."
+
+[postprocess.dis24_outlets]
+long_name = "river discharge into the ocean per unit area"
+units = "m"
+cell_measures = "area: areacello"
+comment = "GloFAS v5.0 discharge (mean of 24 h) at the pits of its drainage network (local drain direction 5, LDD v4.0), divided by the cell's area: metres of water per day over the whole cell, as a daily precipitation total. Discharge (m3/s) = value x cell area / 86400. Pits of basins without outlet (Caspian, Lake Chad) are included."
+
+# The atmospheric variables: ERA5's long_name, short_name and units, CF standard names (ERA5
+# gives ssrd the flux's, W m-2, for a total in J m-2, and strd, tp and the others none), and
+# the daily reduction (cell_methods).
+[postprocess.10u]
+long_name = "10 metre U wind component"
+short_name = "u10"
+standard_name = "eastward_wind"
+units = "m s**-1"
+cell_methods = "time: mean"
+
+[postprocess.10v]
+long_name = "10 metre V wind component"
+short_name = "v10"
+standard_name = "northward_wind"
+units = "m s**-1"
+cell_methods = "time: mean"
+
+[postprocess.2d]
+long_name = "2 metre dewpoint temperature"
+short_name = "d2m"
+standard_name = "dew_point_temperature"
+units = "K"
+cell_methods = "time: mean"
+
+[postprocess.2t]
+long_name = "2 metre temperature"
+short_name = "t2m"
+standard_name = "air_temperature"
+units = "K"
+cell_methods = "time: mean"
+
+[postprocess.mslp]
+long_name = "Mean sea level pressure"
+short_name = "msl"
+standard_name = "air_pressure_at_mean_sea_level"
+units = "Pa"
+cell_methods = "time: mean"
+
+[postprocess.ssrd]
+long_name = "Surface solar radiation downwards"
+short_name = "ssrd"
+standard_name = "integral_wrt_time_of_surface_downwelling_shortwave_flux_in_air"
+units = "J m**-2"
+cell_methods = "time: sum"
+
+[postprocess.strd]
+long_name = "Surface thermal radiation downwards"
+short_name = "strd"
+standard_name = "integral_wrt_time_of_surface_downwelling_longwave_flux_in_air"
+units = "J m**-2"
+cell_methods = "time: sum"
+
+[postprocess.tp]
+long_name = "Total precipitation"
+short_name = "tp"
+standard_name = "lwe_thickness_of_precipitation_amount"
+units = "m"
+cell_methods = "time: sum"
+
+[[postprocess]]
+name = "assign_attrs"
+title = "ARCO-OCEAN: Analysis-Ready Cloud-Optimized Ocean Dataset"
+summary = "A cloud-optimized dataset of ocean physical properties, sea ice, and atmospheric/hydrological forcing designed for training data-driven ocean models."
+id = "https://doi.org/10.5281/zenodo.24471954"
+Conventions = "CF-1.8, ACDD-1.3"
+institution = "National Institute of Oceanography and Applied Geophysics - OGS"
+creator_name = "OGS ARCO-OCEAN Development Team"
+source = "Merged retrospective reanalyses and hindcasts: CMEMS GLORYS12 (ocean & sea ice), ECMWF ERA5 (atmosphere), and GloFAS v5.0 (river discharge)."
+history = "Regridded conservatively from the native grids to a global 1.0 deg regular grid; written as an Icechunk repository (Zarr v3), in chunks of one day and level, sharded by 8 days and all levels."
+license = "CC-BY-4.0"
+attribution = "Generated using E.U. Copernicus Marine Service Information (GLORYS12, https://doi.org/10.48670/moi-00021). Contains modified Copernicus Climate Change Service information 2026 (ERA5, https://doi.org/10.24381/cds.adbb2d47, CC BY 4.0) and modified Copernicus Emergency Management Service information 2026 (GloFAS v5.0, https://doi.org/10.24381/cds.a4fdd6b9). Neither the European Commission nor ECMWF nor Mercator Ocean International is responsible for any use that may be made of the Copernicus information or data it contains."
+references = "https://github.com/inogs/arco-ocean"
+featureType = "grid"
+
+# The extent attributes (ACDD) from the coordinates: the time coverage is the whole output's.
+[[postprocess]]
+name = "coverage_attrs"
+vertical_dim = "depth"
+
+# Checked on each block before its commit: a block that fails is not committed, and the run
+# can resume once the cause is fixed. `arco-make validate` checks a whole output.
+[checks.valid_time_coordinate]
+freq = "1D"
+
+[checks.valid_global_ecmwf_coordinates]
+latitude_dim = "lat"
+longitude_dim = "lon"
+
+# Ocean and sea-ice fields exactly inside the sea; every other variable everywhere.
+[checks.ensure_no_nans]
+exact = true
+seafrac = ["thetao", "so", "uo", "vo", "zos", "siconc", "sivol", "usic", "vsic"]
+
+[checks.attributes]
+
+[save]
+# Versions kept: the current one and the previous one (to go back once).
+keep_versions = 2
+chunks = {time = 1, depth = 1, lat = -1, lon = -1}
+# Shards of 8 days and all levels, a day's levels next to each other: about 120 objects per
+# 32-day block instead of 7,200 (arco-make logbook, 18 Nov).
+shards = {time = 8, depth = -1, lat = -1, lon = -1}
+shard_order = "lexicographic"
+compressors = [{name = "blosc", configuration = {cname = "lz4", clevel = 1, shuffle = "shuffle"}}]
+
+[save.encoding.time]
+units = "days since 1993-01-01"
+calendar = "standard"
+dtype = "int32"
