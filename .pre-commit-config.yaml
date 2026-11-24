@@ -26,10 +26,10 @@ repos:
         language: system
         files: ^tutorials/.*\.py$
       - id: site-tests
-        name: web page tests (node --test)
-        entry: uvx --from nodejs-wheel==24.19.0 node --test site/status.test.mjs
+        name: web page and watchdog tests (node --test)
+        entry: uvx --from nodejs-wheel==24.19.0 node --test site/status.test.mjs scripts/forecast_watchdog.test.mjs
         language: system
-        files: ^site/.*\.(js|mjs)$
+        files: ^(site|scripts)/.*\.(js|mjs)$
         pass_filenames: false
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
