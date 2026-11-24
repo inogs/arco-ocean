@@ -103,6 +103,21 @@ test("the incident lasts while the next collection downloads; one finished close
   assert.match(decision.comment, /^Recovered: \*\*Finished\.\*\* Every run up to 2026-11-24/);
 });
 
+test("a collection finishing without new runs keeps the incident, one a day", () => {
+  const issue = issueFor(ABORTED);
+  const behind = {
+    ...FINISHED,
+    resolutions: [{ res: "0p25", state: "not_published", latest_run: "2026-11-20", runs: 140 }],
+  };
+  const decision = decide(behind, issue, LATER);
+  assert.equal(decision.action, "update");
+  assert.equal(decision.title, "Forecast collection: stale");
+  assert.match(decision.comment, /0\.25° \(2026-11-20, 4 days\)/);
+  // The same collection checked again: the body only.
+  const updated = { ...issue, body: decision.body };
+  assert.equal(decide(behind, updated, LATER).action, "refresh");
+});
+
 test("an issue closed by hand acknowledges its incident, not the next", () => {
   const closed = issueFor(ABORTED, "closed");
   assert.equal(decide(ABORTED, closed, CONTEXT).action, "none");

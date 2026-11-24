@@ -15,6 +15,10 @@ const DAY = 24 * HOUR;
 // 15 minutes); a finished one when the next has not finished within `stale_after_hours`.
 const MISSED_BEATS = 3;
 const MIN_SILENCE = 15 * MINUTE;
+// A finished collection is stale too when a resolution's newest stored run is more than this
+// many days before the newest asked for: only runs younger than the recipes' `missing_after` (two
+// days) wait for their sources, older ones are stored even with a source missing (flagged).
+export const MAX_LAG_DAYS = 2;
 
 // "3 min", "2 h 5 min", "1 d 3 h".
 export function duration(ms) {
@@ -121,6 +125,29 @@ export function assess(heartbeat, now = Date.now()) {
         detail: `No collection has finished for ${duration(now - ended)}: one runs every day.`,
       };
     }
+    // Finished, but without storing the runs: a source stopped, or the downloads fail to store.
+    const behind = heartbeat.target_run
+      ? (heartbeat.resolutions ?? []).filter((entry) => {
+          const lag = lagDays(entry.latest_run, heartbeat.target_run);
+          return lag === null || lag > MAX_LAG_DAYS;
+        })
+      : [];
+    if (behind.length > 0) {
+      const which = behind
+        .map((entry) => {
+          const lag = lagDays(entry.latest_run, heartbeat.target_run);
+          const newest = lag === null ? "no run stored" : `${entry.latest_run}, ${lag} days`;
+          return `${resolutionLabel(entry.res)} (${newest})`;
+        })
+        .join(", ");
+      return {
+        status: "stale",
+        label: "Stale",
+        detail:
+          `The collection finished, but the newest runs stored are behind the newest asked for ` +
+          `(${heartbeat.target_run}): ${which}.`,
+      };
+    }
     return {
       status: "finished",
       label: "Finished",
@@ -132,6 +159,14 @@ export function assess(heartbeat, now = Date.now()) {
     label: "Unknown",
     detail: `The heartbeat has an unknown state (${heartbeat.state}).`,
   };
+}
+
+// How many days the newest stored run is before the newest asked for (null if either is missing).
+export function lagDays(latestRun, targetRun) {
+  const run = Date.parse(`${latestRun}T00:00:00Z`);
+  const target = Date.parse(`${targetRun}T00:00:00Z`);
+  if (!latestRun || !targetRun || Number.isNaN(run) || Number.isNaN(target)) return null;
+  return Math.round((target - run) / DAY);
 }
 
 // How old the newest stored run is, in whole days, at `now` (UTC dates).

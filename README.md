@@ -186,7 +186,9 @@ updated at each step and every 5 minutes while the collection runs (`--heartbeat
 that fails, or is stopped by a signal it can trap, ends its heartbeat as aborted; one killed
 outright (or whose machine goes down) stops beating, and the page calls it stale after three
 missed beats. A finished collection becomes stale when the next has not finished within 30 hours
-(`--stale-after`). The heartbeat never stops a collection: a failure to publish it is logged in
+(`--stale-after`), and is stale at once when a resolution's newest stored run is more than two
+days before the newest asked for (only runs younger than the recipes' `missing_after` wait for
+their sources): finishing every day without storing runs is a problem too. The heartbeat never stops a collection: a failure to publish it is logged in
 `logs/forecast/status.log`.
 
 A watchdog, `.github/workflows/forecast-watchdog.yml`, reads the heartbeat every 30 minutes from
