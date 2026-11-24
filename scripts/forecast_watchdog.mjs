@@ -5,8 +5,9 @@
 // heartbeat as the web page does, judges it with the page's own site/status.js, and keeps one
 // GitHub issue (label `forecast-alert`) open while the collection is stale, aborted or unknown.
 // GitHub emails the issue's assignees and the repository's watchers: one email when an incident
-// starts, one when it changes (another state, or another collection), one when it is closed on
-// recovery. It runs outside the machine that collects, so a machine down is reported too.
+// starts, one when it changes (another state, or another collection), one when the issue is
+// closed, once a collection finishes. It runs outside the machine that collects, so a machine
+// down is reported too. An issue closed by hand acknowledges its incident: it is not reopened.
 //
 // Environment: STATUS_URL (the heartbeat, https), GITHUB_TOKEN (issues: write),
 // GITHUB_REPOSITORY, GITHUB_API_URL, GITHUB_SERVER_URL and GITHUB_RUN_ID (set by Actions),
@@ -39,8 +40,18 @@ export function recorded(issue) {
   }
 }
 
-function cell(value) {
-  return String(value ?? "–").replaceAll("|", "\\|").replaceAll("\n", " ");
+// Text from the heartbeat or an error, made inert in Markdown: no mention, no issue reference, no
+// HTML, on one line.
+export function plain(value) {
+  return String(value ?? "–")
+    .replaceAll(/\s+/g, " ")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("@", "@\u2060")
+    .replaceAll("#", "#\u2060")
+    .replaceAll("`", "'")
+    .replaceAll("|", "\\|");
 }
 
 export function title(verdict) {
@@ -49,74 +60,82 @@ export function title(verdict) {
 
 // The issue's body: what the page shows, with the marker of the incident.
 export function body(verdict, heartbeat, context) {
-  const lines = [`**${verdict.label}.** ${verdict.detail}`];
-  if (context.error) lines.push("", `Reading the heartbeat failed: ${context.error}`);
+  const lines = [`**${verdict.label}.** ${plain(verdict.detail)}`];
+  if (context.error) lines.push("", `Reading the heartbeat failed: ${plain(context.error)}`);
   if (heartbeat && typeof heartbeat === "object") {
     lines.push(
       "",
       `- Collection started: ${utc(heartbeat.started_at)}, last heartbeat: ` +
         `${utc(heartbeat.updated_at)}, ended: ${utc(heartbeat.ended_at)}`,
-      `- Newest run asked for: ${heartbeat.target_run ?? "–"}`,
+      `- Newest run asked for: ${plain(heartbeat.target_run)}`,
     );
     const resolutions = heartbeat.resolutions ?? [];
     if (resolutions.length > 0) {
       lines.push("", "| Resolution | State | Newest run | Runs | Error |", "|---|---|---|---|---|");
       for (const entry of resolutions) {
         lines.push(
-          `| ${cell(resolutionLabel(entry.res))} | ${cell(resolutionState(entry.state))} ` +
-            `| ${cell(entry.latest_run)} | ${cell(entry.runs)} | ${cell(entry.error)} |`,
+          `| ${plain(resolutionLabel(entry.res))} | ${plain(resolutionState(entry.state))} ` +
+            `| ${plain(entry.latest_run)} | ${plain(entry.runs)} | ${plain(entry.error)} |`,
         );
       }
     }
   }
+  // JSON without "<" or ">", which could end the comment.
+  const marker = JSON.stringify(incident(verdict, heartbeat))
+    .replaceAll("<", "\\u003c")
+    .replaceAll(">", "\\u003e");
   lines.push(
     "",
     `Heartbeat: ${context.statusUrl}`,
     `Checked at ${utc(new Date(context.now).toISOString())} by ${context.runUrl}`,
     "",
-    "This issue is closed by the watchdog when the collection recovers.",
+    "The watchdog closes this issue when a collection finishes. Closing it by hand acknowledges " +
+      "this incident: another opens a new issue.",
     "",
-    `<!-- forecast-watchdog ${JSON.stringify(incident(verdict, heartbeat))} -->`,
+    `<!-- forecast-watchdog ${marker} -->`,
   );
   return lines.join("\n");
 }
 
-// What to do with the open alert issue (or null), given the heartbeat now:
-// {action: "none" | "open" | "update" | "close", ...}.
+// What to do, given the heartbeat now and the newest alert issue, open or closed (or null):
+// {action: "none" | "open" | "refresh" | "update" | "close", ...}. "refresh" rewrites the body of
+// the same incident (no email); an incident lasts until a collection finishes.
 export function decide(heartbeat, issue, context) {
   const verdict = assess(heartbeat, context.now);
-  if (!ALERTING.has(verdict.status)) {
-    if (!issue) return { action: "none", verdict };
+  const open = issue?.state === "open" ? issue : null;
+  if (verdict.status === "finished") {
+    if (!open) return { action: "none", verdict };
     return {
       action: "close",
       verdict,
-      comment: `Recovered: **${verdict.label}.** ${verdict.detail}`,
+      comment: `Recovered: **${verdict.label}.** ${plain(verdict.detail)}`,
     };
   }
+  // Downloading: the incident, if any, lasts until the collection finishes.
+  if (!ALERTING.has(verdict.status)) return { action: "none", verdict };
+  // An unreadable heartbeat (S3 or the network, seen from GitHub) does not replace what is known.
+  if (context.error && open) return { action: "none", verdict };
   const now = incident(verdict, heartbeat);
-  if (!issue) {
-    return {
-      action: "open",
-      verdict,
-      title: title(verdict),
-      body: body(verdict, heartbeat, context),
-    };
-  }
   const before = recorded(issue);
-  if (before && before.status === now.status && before.started_at === now.started_at) {
-    return { action: "none", verdict };
+  const same = before?.status === now.status && before?.started_at === now.started_at;
+  const text = { title: title(verdict), body: body(verdict, heartbeat, context) };
+  if (!open) {
+    // Closed by hand: the incident was acknowledged.
+    if (issue && same) return { action: "none", verdict };
+    return { action: "open", verdict, ...text };
   }
+  if (same) return { action: "refresh", verdict, ...text };
   return {
     action: "update",
     verdict,
-    title: title(verdict),
-    body: body(verdict, heartbeat, context),
-    comment: `Now **${verdict.label.toLowerCase()}**: ${verdict.detail}`,
+    ...text,
+    comment: `Now **${verdict.label.toLowerCase()}**: ${plain(verdict.detail)}`,
   };
 }
 
-// The heartbeat, or null with the reason; a few attempts, as one failed request is not news.
-export async function readHeartbeat(url, { attempts = 3, waitMs = 20_000 } = {}) {
+// The heartbeat, or null with the reason: attempts over three minutes, as a short outage of S3 or
+// of the network is not news.
+export async function readHeartbeat(url, { attempts = 4, waitMs = 60_000 } = {}) {
   let error = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -141,9 +160,11 @@ async function github(method, path, payload) {
       "User-Agent": "arco-ocean-forecast-watchdog",
     },
     body: payload === undefined ? undefined : JSON.stringify(payload),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {
-    const error = new Error(`${method} ${path}: HTTP ${response.status}`);
+    const answer = (await response.text()).slice(0, 500);
+    const error = new Error(`${method} ${path}: HTTP ${response.status}: ${answer}`);
     error.status = response.status;
     throw error;
   }
@@ -159,9 +180,12 @@ async function main() {
   const server = process.env.GITHUB_SERVER_URL ?? "https://github.com";
   const runUrl = `${server}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID ?? ""}`;
   const { heartbeat, error } = await readHeartbeat(statusUrl);
-  const issues = await github("GET", `/repos/${repo}/issues?state=open&labels=${LABEL}&per_page=10`);
-  // The oldest open one: there should be one at most.
-  const issue = issues.filter((entry) => !entry.pull_request).at(-1) ?? null;
+  const issues = await github(
+    "GET",
+    `/repos/${repo}/issues?state=all&labels=${LABEL}&sort=created&direction=desc&per_page=10`,
+  );
+  // The newest, open or closed.
+  const issue = issues.find((entry) => !entry.pull_request) ?? null;
   const context = { now: Date.now(), statusUrl, runUrl, error };
   const decision = decide(heartbeat, issue, context);
 
@@ -179,13 +203,19 @@ async function main() {
       .split(",")
       .map((login) => login.trim())
       .filter(Boolean);
-    const created = await github("POST", `/repos/${repo}/issues`, {
-      title: decision.title,
-      body: decision.body,
-      labels: [LABEL],
-      assignees,
-    });
+    const fields = { title: decision.title, body: decision.body, labels: [LABEL] };
+    let created;
+    try {
+      created = await github("POST", `/repos/${repo}/issues`, { ...fields, assignees });
+    } catch (caught) {
+      // A login that cannot be assigned refuses the whole issue: open it unassigned.
+      if (caught.status !== 422 || assignees.length === 0) throw caught;
+      console.log(`::warning::ALERT_ASSIGNEES refused (${caught.message}): issue unassigned`);
+      created = await github("POST", `/repos/${repo}/issues`, fields);
+    }
     decision.issue = created.number;
+  } else if (decision.action === "refresh") {
+    await github("PATCH", `/repos/${repo}/issues/${issue.number}`, { body: decision.body });
   } else if (decision.action === "update") {
     await github("PATCH", `/repos/${repo}/issues/${issue.number}`, {
       title: decision.title,

@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { test } from "node:test";
 
-import { body, decide, readHeartbeat, recorded } from "./forecast_watchdog.mjs";
+import { decide, plain, readHeartbeat, recorded } from "./forecast_watchdog.mjs";
 
 const NOW = Date.parse("2026-11-24T12:30:00Z");
 const CONTEXT = {
@@ -39,15 +39,22 @@ function heartbeat(fields) {
 const ABORTED = heartbeat({ state: "aborted", detail: "The download failed at 0p5." });
 
 // The issue the watchdog would have opened for `beat`.
-function issueFor(beat) {
+function issueFor(beat, state = "open") {
   const opened = decide(beat, null, CONTEXT);
-  return { number: 7, body: opened.body };
+  return { number: 7, state, body: opened.body };
 }
+
+const FINISHED = heartbeat({
+  state: "finished",
+  started_at: "2026-11-25T12:00:00Z",
+  updated_at: "2026-11-25T12:20:00Z",
+  ended_at: "2026-11-25T12:20:00Z",
+});
+const LATER = { ...CONTEXT, now: Date.parse("2026-11-25T12:30:00Z") };
 
 test("a collection running or finished needs no issue", () => {
   assert.equal(decide(heartbeat({}), null, CONTEXT).action, "none");
-  const done = heartbeat({ state: "finished", ended_at: "2026-11-24T12:20:00Z" });
-  assert.equal(decide(done, null, CONTEXT).action, "none");
+  assert.equal(decide(FINISHED, null, LATER).action, "none");
 });
 
 test("an aborted collection opens an issue, with the resolutions and the incident", () => {
@@ -63,10 +70,13 @@ test("an aborted collection opens an issue, with the resolutions and the inciden
   });
 });
 
-test("the same incident is not reported twice", () => {
+test("the same incident refreshes the issue's body, without a comment", () => {
   const issue = issueFor(ABORTED);
   // Hours later, the same collection still aborted.
-  assert.equal(decide(ABORTED, issue, { ...CONTEXT, now: NOW + 6 * 3600e3 }).action, "none");
+  const decision = decide(ABORTED, issue, { ...CONTEXT, now: NOW + 6 * 3600e3 });
+  assert.equal(decision.action, "refresh");
+  assert.equal(decision.comment, undefined);
+  assert.match(decision.body, /Checked at 2026-11-24 18:30 UTC/);
 });
 
 test("a silent collection is stale, and then its incident is updated", () => {
@@ -75,37 +85,58 @@ test("a silent collection is stale, and then its incident is updated", () => {
   assert.equal(opened.action, "open");
   assert.equal(opened.title, "Forecast collection: stale");
   // The same collection then reports its end, aborted: news.
-  const update = decide(ABORTED, { number: 7, body: opened.body }, CONTEXT);
+  const update = decide(ABORTED, { number: 7, state: "open", body: opened.body }, CONTEXT);
   assert.equal(update.action, "update");
   assert.equal(update.title, "Forecast collection: aborted");
   assert.match(update.comment, /^Now \*\*aborted\*\*: The download failed at 0p5\./);
 });
 
-test("another collection aborted is another incident, in the same issue", () => {
+test("the incident lasts while the next collection downloads; one finished closes it", () => {
   const issue = issueFor(ABORTED);
+  const next = heartbeat({ started_at: "2026-11-25T12:00:00Z", updated_at: "2026-11-25T12:28:00Z" });
+  assert.equal(decide(next, issue, LATER).action, "none");
+  // It aborts too: another incident, in the same issue.
+  const again = { ...next, state: "aborted", detail: "The download failed at 0p5." };
+  assert.equal(decide(again, issue, LATER).action, "update");
+  const decision = decide(FINISHED, issue, LATER);
+  assert.equal(decision.action, "close");
+  assert.match(decision.comment, /^Recovered: \*\*Finished\.\*\* Every run up to 2026-11-24/);
+});
+
+test("an issue closed by hand acknowledges its incident, not the next", () => {
+  const closed = issueFor(ABORTED, "closed");
+  assert.equal(decide(ABORTED, closed, CONTEXT).action, "none");
   const next = { ...ABORTED, started_at: "2026-11-25T12:00:00Z" };
-  assert.equal(decide(next, issue, CONTEXT).action, "update");
+  assert.equal(decide(next, closed, LATER).action, "open");
+  // A closed issue is never closed again.
+  assert.equal(decide(FINISHED, closed, LATER).action, "none");
 });
 
 test("an issue without the marker is rewritten", () => {
-  assert.equal(recorded({ body: "edited by hand" }), null);
-  assert.equal(decide(ABORTED, { number: 7, body: "edited by hand" }, CONTEXT).action, "update");
+  const edited = { number: 7, state: "open", body: "edited by hand" };
+  assert.equal(recorded(edited), null);
+  assert.equal(decide(ABORTED, edited, CONTEXT).action, "update");
 });
 
-test("recovery closes the issue", () => {
-  const decision = decide(heartbeat({}), issueFor(ABORTED), CONTEXT);
-  assert.equal(decision.action, "close");
-  assert.match(decision.comment, /^Recovered: \*\*Downloading\.\*\*/);
-});
-
-test("an unreadable heartbeat is unknown, with the reason", () => {
+test("an unreadable heartbeat is unknown, with the reason, unless an incident is open", () => {
   const context = { ...CONTEXT, error: "HTTP 404" };
   const decision = decide(null, null, context);
   assert.equal(decision.action, "open");
   assert.equal(decision.title, "Forecast collection: unknown");
   assert.match(decision.body, /Reading the heartbeat failed: HTTP 404/);
   assert.deepEqual(recorded({ body: decision.body }), { status: "unknown", started_at: null });
-  assert.doesNotMatch(body({ status: "unknown", label: "Unknown", detail: "-" }, null, context), /\|/);
+  // An aborted collection stays the incident while the heartbeat cannot be read.
+  assert.equal(decide(null, issueFor(ABORTED), context).action, "none");
+});
+
+test("text from the heartbeat is inert in Markdown", () => {
+  assert.equal(plain("@step #12 <!-- `x`\n| y & z"), "@⁠step #⁠12 &lt;!-- 'x' \\| y &amp; z");
+  const loud = { ...ABORTED, detail: "failed: see #3, @someone <!--" };
+  const decision = decide(loud, null, CONTEXT);
+  assert.doesNotMatch(decision.body, /@someone|#3|<!-- [^f]/);
+  assert.deepEqual(recorded({ body: decision.body }).status, "aborted");
+  const odd = { ...ABORTED, started_at: "--> <b>" };
+  assert.equal(recorded({ body: decide(odd, null, CONTEXT).body }).started_at, "--> <b>");
 });
 
 test("the heartbeat is read over HTTP, with attempts", async () => {

@@ -191,10 +191,12 @@ missed beats. A finished collection becomes stale when the next has not finished
 
 A watchdog, `.github/workflows/forecast-watchdog.yml`, reads the heartbeat every 30 minutes from
 GitHub's machines, judges it as the page does (`site/status.js`), and keeps an issue labelled
-`forecast-alert` open while the collection is stale, aborted or unknown, assigned to the
-maintainers: GitHub emails them when the incident starts, when it changes (another state, or
-another collection) and when the issue is closed on recovery, by the watchdog. Running outside
-the machine that collects, it also reports that machine down. It is off until the repository's
+`forecast-alert` open from the moment the collection is stale, aborted or unknown until a
+collection finishes, assigned to the maintainers: GitHub emails them when the incident starts,
+when it changes (another state, or another collection) and when the watchdog closes the issue.
+Closing it by hand acknowledges the incident: only the next opens another issue. A heartbeat that
+cannot be read for three minutes is unknown. Running outside the machine that collects, the
+watchdog also reports that machine down. It is off until the repository's
 Actions variables give the heartbeat's URL, `FORECAST_STATUS_URL`
 (`https://ogs-arco-ocean.s3.eu-south-1.amazonaws.com/status/forecast.json`), and the logins to
 assign, `ALERT_ASSIGNEES` (comma-separated). GitHub disables the schedules of a public repository
