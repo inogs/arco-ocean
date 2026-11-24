@@ -178,7 +178,8 @@ today's run on 23 Nov 2026 (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS 
 - a collection that hangs is stopped after 20 hours (its heartbeat ends aborted, the next one
   resumes), and one that takes more than 80 % of the machine's memory is killed;
 - the output goes to the journal (`journalctl --user -u arco-ocean-forecast`), the next and last
-  runs are shown by `systemctl --user list-timers`.
+  runs are shown by `systemctl --user list-timers`; the unit fails only when a download does (a
+  run not published yet ends `forecast.sh` with 75, a success for the unit).
 
 The installer links the units from the checkout (after a `git pull` that changes them:
 `systemctl --user daemon-reload`) and writes the machine's part, the checkout and the options, in

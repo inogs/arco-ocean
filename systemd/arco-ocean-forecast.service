@@ -17,8 +17,11 @@ Type=oneshot
 Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 Environment=FORECAST_OPTIONS=
 ExecStart=/bin/bash scripts/forecast.sh --status-url s3://ogs-arco-ocean/status/forecast.json $FORECAST_OPTIONS
+# 75: the newest run is not published yet, the runs before are stored (the next collection adds
+# it); the heartbeat tells, the unit does not fail.
+SuccessExitStatus=75
 # A collection that hangs is stopped: all its processes get SIGTERM, its heartbeat ends aborted
-# and the next collection resumes (--extend). Waiting for late releases takes up to 7.5 hours
+# and the next collection resumes it (download.sh: --extend --resume, at once). Waiting for late releases takes up to 7.5 hours
 # (6 attempts, 30 minutes apart, per resolution); a backfill runs by hand, not from here.
 TimeoutStartSec=20h
 TimeoutStopSec=2min

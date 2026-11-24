@@ -86,7 +86,8 @@ def test_a_collection_that_finishes(project) -> None:
 def test_a_run_not_published_yet_finishes_with_a_detail(project) -> None:
   process = start(project, FAKE_CODES="1p0=75")
   output, _ = process.communicate(timeout=120)
-  assert process.returncode == 1, output
+  # 75, not a failure: the systemd unit counts it a success.
+  assert process.returncode == 75, output
   document = published(project)
   assert document["state"] == "finished"
   assert "not published the newest run yet (1p0)" in document["detail"]

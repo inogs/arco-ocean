@@ -257,7 +257,8 @@ fi
 if [[ ${#WAITING[@]} -gt 0 ]]; then
     status end finished --detail "A source has not published the newest run yet (${WAITING[*]}): the next collection adds it."
     echo "Forecast collection: the newest run is not published yet at ${WAITING[*]}; the next run catches up." >&2
-    exit 1
+    # Not a failure (the unit counts it a success), but not every run stored: 75, as download.sh.
+    exit 75
 fi
 status end finished
 echo "Forecast collection done ($(date -u))."
