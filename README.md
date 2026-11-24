@@ -178,7 +178,7 @@ releases. Each component has a flag variable (`ifs_forecast`, `glofas_forecast`,
 false where they come from later releases or are missing (a source without the run: NaN).
 
 With `--status-url`, the collection publishes a heartbeat, `status/forecast.json` in the bucket,
-which the ARCO-OCEAN web page reads: the collection's state (`running`, `finished`, `aborted`),
+which the [web page](#web-page) reads: the collection's state (`running`, `finished`, `aborted`),
 each resolution's (`pending`, `downloading`, `finished`, `not_published`, `failed`), and each
 repository's newest run, number of runs and flags. `scripts/forecast_status.py` writes it, with the
 Python and the AWS profile of the arco-make that downloads (`--virtual-env`, or the image); it is
@@ -194,8 +194,9 @@ missed beats. A finished collection becomes stale when the next has not finished
 `uvx pre-commit run --all-files` runs the checks made before each commit: TOML and YAML syntax,
 ruff, ShellCheck, REUSE and a secret scan. `uv run --frozen --only-group notes pytest tests` loads
 every recipe with the models of the pinned arco-make (an unknown key, step or argument fails),
-runs the examples of the coarsening notes, and tests the forecast heartbeat. CI runs both on every
-pull request.
+runs the examples of the coarsening notes, and tests the forecast heartbeat; the pre-commit checks
+also test the web page's logic (`node --test site/status.test.mjs`, Node.js from `uvx`). CI runs
+both on every pull request.
 
 ## Data format
 
@@ -247,6 +248,17 @@ The first version of ARCO-OCEAN (0.25°, 10 levels, waves, Zarr version 2) stays
 1. [Computing the Oceanic El Nino Index (ONI) with Xarray and ARCO-OCEAN](tutorials/oni.py) (written for the first version: its paths and variables are those of the 0.25°, 10-level dataset)
 
 The tutorials are [marimo](https://marimo.io) notebooks: `uvx marimo edit --sandbox tutorials/oni.py` opens one in an environment of its own, with the dependencies it lists.
+
+## Web page
+
+`site/` is the web page of ARCO-OCEAN: static files without a build step, deployed to GitHub
+Pages from `main` by `.github/workflows/pages.yml` (Pages enabled once, with "GitHub Actions" as
+source). Besides the dataset's description, it shows the state of the forecast collection,
+read every minute from its heartbeat (above): downloading, finished, stale or aborted, and each
+resolution's newest run. `site/status.js` decides the state; `site/dashboard.js` shows it. To
+preview it, serve the directory (`python -m http.server -d site`, module scripts do not load from
+`file://`); `?status=URL` reads another heartbeat, e.g. the test copy in the bucket's
+`experiments/status/forecast.json`.
 
 ## License
 
