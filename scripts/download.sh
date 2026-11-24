@@ -257,6 +257,13 @@ for (( attempt=1; attempt<=ATTEMPTS; attempt++ )); do
         echo "A check of the recipe failed (see the log): fix the cause, then rerun this command with --resume." >&2
         exit 1
     fi
+    # Refused because an earlier run of this output failed (killed, say) and can be continued:
+    # the next attempt resumes it (--resume, after the first), at once.
+    if [[ ${attempt} -eq 1 ]] && tail -n "+$((RUN_START + 1))" "${LOG_FILE}" \
+        | grep -q "A download run failed at .*--resume continues it"; then
+        echo "Run 1: an earlier run failed and waits: resuming it."
+        continue
+    fi
     if [[ ${attempt} -lt ${ATTEMPTS} ]]; then
         sleep "${RETRY_DELAY}"
     fi
