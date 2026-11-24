@@ -164,8 +164,9 @@ then every day, adding the runs after the last stored one (a missed day is caugh
 scripts/forecast.sh --start 2026-07-01
 # Every day, from cron, two hours after the last source published today's run on 23 Nov 2026
 # (GLO12 by 06:00 UTC, IFS on AWS at 07:30, the GloFAS forecast between 09:45 and 10:00), so that
-# a late release still makes it; a run still missing is tried again (below), else the next day:
-# 0 12 * * * cd /path/to/arco-ocean && scripts/forecast.sh >> logs/forecast/cron.log 2>&1
+# a late release still makes it; a run still missing is tried again (below), else the next day.
+# It publishes its heartbeat for the web page (below):
+# 0 12 * * * cd /path/to/arco-ocean && scripts/forecast.sh --status-url s3://ogs-arco-ocean/status/forecast.json >> logs/forecast/cron.log 2>&1
 ```
 
 A run whose sources have not all published it yet (younger than two days) is not stored: the
@@ -176,12 +177,25 @@ releases. Each component has a flag variable (`ifs_forecast`, `glofas_forecast`,
 `glo12_forecast`; `init_time` x `lead_time`), true where its values are its run's own forecast,
 false where they come from later releases or are missing (a source without the run: NaN).
 
+With `--status-url`, the collection publishes a heartbeat, `status/forecast.json` in the bucket,
+which the ARCO-OCEAN web page reads: the collection's state (`running`, `finished`, `aborted`),
+each resolution's (`pending`, `downloading`, `finished`, `not_published`, `failed`), and each
+repository's newest run, number of runs and flags. `scripts/forecast_status.py` writes it, with the
+Python and the AWS profile of the arco-make that downloads (`--virtual-env`, or the image); it is
+updated at each step and every 5 minutes while the collection runs (`--heartbeat`). A collection
+that fails, or is stopped by a signal it can trap, ends its heartbeat as aborted; one killed
+outright (or whose machine goes down) stops beating, and the page calls it stale after three
+missed beats. A finished collection becomes stale when the next has not finished within 30 hours
+(`--stale-after`). The heartbeat never stops a collection: a failure to publish it is logged in
+`logs/forecast/status.log`.
+
 ### Checks
 
 `uvx pre-commit run --all-files` runs the checks made before each commit: TOML and YAML syntax,
 ruff, ShellCheck, REUSE and a secret scan. `uv run --frozen --only-group notes pytest tests` loads
-every recipe with the models of the pinned arco-make (an unknown key, step or argument fails) and
-runs the examples of the coarsening notes. CI runs both on every pull request.
+every recipe with the models of the pinned arco-make (an unknown key, step or argument fails),
+runs the examples of the coarsening notes, and tests the forecast heartbeat. CI runs both on every
+pull request.
 
 ## Data format
 
