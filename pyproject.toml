@@ -1,57 +1,6 @@
 [project]
 name = "arco-ocean"
-version = "1.1"
+version = "0.1.0"
 description = "Documentation and tutorials for the ARCO-OCEAN dataset"
-requires-python = ">=3.13"
-dependencies = [
-    "xarray>=2025.1.1",
-    "numpy",
-    "cftime",
-    "zarr",
-    "obstore",
-    "dask",
-    "distributed",
-    "marimo",
-    "pip",
-    "matplotlib",
-    "cartopy",
-    "nc-time-axis",
-    "arraylake>=0.33.0",
-    "netcdf4>=1.7.4",
-    "pooch>=1.9.0",
-    "ipython>=9.6.0",
-    "icechunk>=2",
-    "virtualizarr>=2.5.1",
-    "arro3-core>=0.8.0",
-    "scipy>=1.17.1",
-    "tqdm>=4.67.3",
-]
-
-[dependency-groups]
-# The coarsening notes' doctests and measurements (docs/) and the recipes' validation (tests/):
-# `uv run --only-group notes ...`. arco-make at the top of its pull-request stack (the recipes
-# use its forecast mode); move to its release (v0.2.0) once tagged.
-notes = [
-    "arcomake[live] @ git+https://github.com/stefanocampanella/arco-make.git@441874f6db7e610f2ca5d45568620310c12e7373",
-    "pytest",
-]
-
-# The style of arco-make: 2-space indentation, 100 columns, the same rules.
-[tool.ruff]
-target-version = "py313"
-line-length = 100
-indent-width = 2
-
-[tool.ruff.format]
-# marimo writes its notebooks in its own form (4-space indentation) whenever they are saved.
-exclude = ["tutorials/*.py"]
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "SIM"]
-ignore = ["E501", "B028"]
-
-[tool.ruff.lint.per-file-ignores]
-# marimo notebooks: a cell shows its last expression (B018); names come as cell arguments, so ruff
-# reads the strings of `Literal[...]` as names (F821; `marimo check` checks the cells' names); the
-# tutorial's code is kept as adapted (F841).
-"tutorials/*.py" = ["B018", "F821", "F841"]
+requires-python = ">=3.11"
+dependencies = ["xarray", "numpy", "cftime", "zarr", "obstore", "dask", "distributed", "jupyter", "pip", "matplotlib", "cartopy", "nc-time-axis"]
